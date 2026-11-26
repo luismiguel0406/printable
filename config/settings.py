@@ -137,6 +137,7 @@ IMPRESORA_BACKEND = os.environ.get(
 DPI_MEDICION = 100
 DPI_IMPRESION = 360
 MONEDA = "RD$"
+FORMAT_MODULE_PATH = ["config.formats"]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

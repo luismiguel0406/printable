@@ -121,3 +121,7 @@ def confirmar(request, pk):
         return redirect("trabajos:imprimir")
     messages.error(request, f"No se pudo imprimir: {trabajo.mensaje_error}")
     return redirect(url)
+
+
+def historial(request):
+    return render(request, "trabajos/historial.html", {"trabajos": Trabajo.objects.all()[:200]})

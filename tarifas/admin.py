@@ -34,3 +34,12 @@ class ConfiguracionAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+from .models import RecargaTinta  # noqa: E402
+
+
+@admin.register(RecargaTinta)
+class RecargaTintaAdmin(admin.ModelAdmin):
+    list_display = ["canal", "fecha", "precio_botella"]
+    list_filter = ["canal"]

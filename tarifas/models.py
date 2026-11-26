@@ -78,3 +78,17 @@ class Configuracion(models.Model):
     def obtener(cls) -> "Configuracion":
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class RecargaTinta(models.Model):
+    canal = models.CharField(max_length=1, choices=CANALES)
+    fecha = models.DateTimeField()
+    precio_botella = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        verbose_name = "recarga de tinta"
+        verbose_name_plural = "recargas de tinta"
+        ordering = ["-fecha"]
+
+    def __str__(self):
+        return f"{self.get_canal_display()} {self.fecha:%d/%m/%Y}"
