@@ -15,7 +15,9 @@
   {% for e in subir.archivo.errors %}<p class="error">{{ e }}</p>{% endfor %}
 </form>
 
-{% if trabajo %}
+{% if trabajo and trabajo.estado == "impreso" %}
+<div class="aviso">«{{ trabajo.nombre_original }}» ya se imprimió (RD$ {{ trabajo.total }}). Sube el archivo otra vez para reimprimir.</div>
+{% elif trabajo %}
 <h2 style="margin-top:1.5rem">{{ trabajo.nombre_original }} <small>({{ trabajo.total_paginas }} página{{ trabajo.total_paginas|pluralize }})</small></h2>
 <form id="opciones" class="fila" hx-post="{% url 'trabajos:estimacion' trabajo.pk %}"
       hx-trigger="load, change, keyup changed delay:600ms from:#id_paginas" hx-target="#estimacion">{% csrf_token %}
@@ -27,6 +29,9 @@
 {% endif %}
 
 <script>
+  // Mientras se recalcula, el botón de imprimir viejo no se puede usar.
+  document.body.addEventListener("htmx:beforeRequest", () =>
+    document.querySelectorAll("#estimacion button").forEach(b => b.disabled = true));
   const zona = document.getElementById("zona"), input = document.getElementById("id_archivo");
   ["dragover", "dragenter"].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.style.background = "#eef4ff"; }));
   zona.addEventListener("dragleave", () => zona.style.background = "");

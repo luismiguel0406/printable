@@ -40,7 +40,7 @@ def test_word_usa_convertidor(tmp_path, monkeypatch):
 
 
 def test_word_sin_convertidores(tmp_path, monkeypatch):
-    monkeypatch.setattr(conversion, "_docx2pdf_disponible", lambda: False)
+    monkeypatch.setattr(conversion, "_word_disponible", lambda: False)
     monkeypatch.setattr(conversion, "_buscar_soffice", lambda: None)
     with pytest.raises(ArchivoNoValido, match="Office o LibreOffice"):
         conversion.convertir_word_a_pdf(FIX / "doc.docx", tmp_path)

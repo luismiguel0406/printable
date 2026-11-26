@@ -24,6 +24,7 @@
   </table>
   <form method="post" action="{% url 'trabajos:confirmar' trabajo.pk %}" style="margin-top:1rem"
         onsubmit="this.querySelector('button').disabled=true">{% csrf_token %}
+    <input type="hidden" name="huella" value="{{ trabajo.huella }}">
     <button style="font-size:1.15rem">Imprimir — RD$ {{ est.total }}</button>
   </form>
 {% endif %}

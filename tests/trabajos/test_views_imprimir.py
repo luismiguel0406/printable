@@ -40,6 +40,11 @@ def trabajo_estimado_2_copias(client, db, perfil_glossy_4x6):
     return t
 
 
+def confirmar(client, t):
+    t.refresh_from_db()
+    return client.post(reverse("trabajos:confirmar", args=[t.pk]), {"huella": t.huella()})
+
+
 def test_pagina_principal(client, db):
     r = client.get("/")
     assert r.status_code == 200 and "Arrastra" in r.content.decode()
@@ -87,23 +92,22 @@ def test_sin_tarifa_muestra_error(client, trabajo_cuatro_paginas, crear_perfil):
 
 
 def test_imprimir_envia_paginas_por_copias(client, trabajo_estimado_2_copias, controlador_falso):
-    client.post(reverse("trabajos:confirmar", args=[trabajo_estimado_2_copias.pk]))
+    confirmar(client, trabajo_estimado_2_copias)
     impresora, devmode, paginas, nombre = controlador_falso.impresos[0]
     assert len(paginas) == 2 and nombre == "una.pdf"
     assert Trabajo.objects.get().estado == "impreso"
 
 
 def test_no_imprime_dos_veces(client, trabajo_estimado_2_copias, controlador_falso):
-    url = reverse("trabajos:confirmar", args=[trabajo_estimado_2_copias.pk])
-    client.post(url)
-    client.post(url)
+    confirmar(client, trabajo_estimado_2_copias)
+    confirmar(client, trabajo_estimado_2_copias)
     assert len(controlador_falso.impresos) == 1
 
 
 def test_impresora_falla_queda_error(client, trabajo_estimado_2_copias, controlador_falso):
     controlador_falso.fallar = True
-    client.post(reverse("trabajos:confirmar", args=[trabajo_estimado_2_copias.pk]))
-    t = Trabajo.objects.get()
+    confirmar(client, trabajo_estimado_2_copias)
+    t = Trabajo.objects.get(estado="error")
     assert t.estado == "error" and "desconectada" in t.mensaje_error
 
 

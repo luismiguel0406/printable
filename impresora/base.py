@@ -50,3 +50,19 @@ class ControladorImpresora(Protocol):
         paginas: Iterable[Image.Image],
         nombre_documento: str,
     ) -> None: ...
+
+
+def envolver_errores(funcion):
+    """Convierte cualquier excepción del sistema en ErrorImpresora (mensaje para el usuario)."""
+    import functools
+
+    @functools.wraps(funcion)
+    def envuelta(*args, **kwargs):
+        try:
+            return funcion(*args, **kwargs)
+        except ErrorImpresora:
+            raise
+        except Exception as e:
+            raise ErrorImpresora(f"Error de la impresora: {e}") from e
+
+    return envuelta

@@ -11,7 +11,8 @@ from typing import Iterable
 import win32print
 from PIL import Image, ImageWin
 
-from .base import ErrorImpresora, InfoPapel
+from .base import ErrorImpresora, InfoPapel, envolver_errores
+from .estado import motivo_bloqueo
 from .devmode import con_copias
 
 DM_OUT_BUFFER = 2
@@ -117,16 +118,20 @@ class _DC:
 
 
 class ControladorWindows:
+    @envolver_errores
     def listar_impresoras(self) -> list[str]:
         flags = win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS
         return [p[2] for p in win32print.EnumPrinters(flags)]
 
+    @envolver_errores
     def devmode_predeterminado(self, impresora: str) -> bytes:
         return _document_properties(impresora, None, preguntar=False)
 
+    @envolver_errores
     def abrir_preferencias(self, impresora: str, devmode: bytes) -> bytes | None:
         return _document_properties(impresora, devmode, preguntar=True)
 
+    @envolver_errores
     def info_papel(self, impresora: str, devmode: bytes) -> InfoPapel:
         with _DC(impresora, devmode) as hdc:
             cap = lambda i: _gdi32.GetDeviceCaps(hdc, i)  # noqa: E731
@@ -142,6 +147,7 @@ class ControladorWindows:
                 imprimible_alto_mm=mm_y(cap(VERTRES)),
             )
 
+    @envolver_errores
     def version_driver(self, impresora: str) -> str:
         h = win32print.OpenPrinter(impresora)
         try:
@@ -155,6 +161,18 @@ class ControladorWindows:
         finally:
             win32print.ClosePrinter(h)
 
+    @staticmethod
+    def _verificar_disponible(impresora: str) -> None:
+        h = win32print.OpenPrinter(impresora)
+        try:
+            info = win32print.GetPrinter(h, 2)
+        finally:
+            win32print.ClosePrinter(h)
+        motivo = motivo_bloqueo(info.get("Attributes", 0), info.get("Status", 0))
+        if motivo:
+            raise ErrorImpresora(motivo)
+
+    @envolver_errores
     def imprimir(
         self,
         impresora: str,
@@ -162,6 +180,7 @@ class ControladorWindows:
         paginas: Iterable[Image.Image],
         nombre_documento: str,
     ) -> None:
+        self._verificar_disponible(impresora)
         try:
             with _DC(impresora, con_copias(devmode, 1)) as hdc:
                 ancho, alto = _gdi32.GetDeviceCaps(hdc, HORZRES), _gdi32.GetDeviceCaps(hdc, VERTRES)
@@ -178,7 +197,8 @@ class ControladorWindows:
                 except BaseException:
                     _gdi32.AbortDoc(hdc)
                     raise
-                _gdi32.EndDoc(hdc)
+                if _gdi32.EndDoc(hdc) <= 0:
+                    raise ErrorImpresora("La impresora no terminó de recibir el trabajo")
         except ErrorImpresora:
             raise
         except Exception as e:  # cualquier otro fallo del sistema

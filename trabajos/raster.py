@@ -12,6 +12,7 @@ from .conversion import Documento
 
 Escala = Literal["ajustar", "real", "llenar"]
 DPI_FOTO_POR_DEFECTO = 300
+DPI_FOTO_MINIMO = 150  # los celulares graban 72 ppp sin significado real
 MM_POR_PULGADA = 25.4
 
 
@@ -43,7 +44,9 @@ def _componer(contenido: Image.Image, w: int, h: int) -> Image.Image:
 
 def _pagina_imagen(doc: Documento, w: int, h: int, escala: Escala, dpi: int) -> Image.Image:
     with Image.open(doc.ruta) as original:
-        dpi_foto = original.info.get("dpi", (DPI_FOTO_POR_DEFECTO,))[0] or DPI_FOTO_POR_DEFECTO
+        dpi_foto = float(original.info.get("dpi", (0,))[0] or 0)
+        if dpi_foto < DPI_FOTO_MINIMO:
+            dpi_foto = DPI_FOTO_POR_DEFECTO
         img = _a_rgb(ImageOps.exif_transpose(original))
     # tamaño natural en píxeles del lienzo
     ancho, alto = img.width / dpi_foto * dpi, img.height / dpi_foto * dpi
@@ -51,7 +54,14 @@ def _pagina_imagen(doc: Documento, w: int, h: int, escala: Escala, dpi: int) -> 
         img = img.rotate(90, expand=True)
         ancho, alto = alto, ancho
     f = _factor(ancho, alto, w, h, escala)
-    destino = (max(1, round(ancho * f)), max(1, round(alto * f)))
+    dw, dh = ancho * f, alto * f  # tamaño final del contenido en px del lienzo
+    vis_w, vis_h = min(dw, w), min(dh, h)
+    if vis_w < dw or vis_h < dh:
+        # Recortar primero en píxeles de origen: nunca se crea una imagen mayor que el lienzo.
+        cx, cy = img.width / 2, img.height / 2
+        mw, mh = img.width * vis_w / dw / 2, img.height * vis_h / dh / 2
+        img = img.crop((round(cx - mw), round(cy - mh), round(cx + mw), round(cy + mh)))
+    destino = (max(1, round(vis_w)), max(1, round(vis_h)))
     if destino != img.size:
         img = img.resize(destino, Image.Resampling.LANCZOS)
     return _componer(img, w, h)
@@ -65,7 +75,14 @@ def _pagina_pdf(pdf, numero: int, w: int, h: int, escala: Escala, dpi: int) -> I
         ancho, alto = alto, ancho
     f = _factor(ancho, alto, w, h, escala)
     zoom = dpi * f / 72
-    pix = pagina.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False)
+    # Parte visible (centrada) del contenido, en coordenadas de la página sin rotar.
+    fx, fy = min(1.0, w / (ancho * f)), min(1.0, h / (alto * f))
+    if rotar:
+        fx, fy = fy, fx
+    r = pagina.rect
+    mx, my = r.width * (1 - fx) / 2, r.height * (1 - fy) / 2
+    recorte = pymupdf.Rect(r.x0 + mx, r.y0 + my, r.x1 - mx, r.y1 - my)
+    pix = pagina.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), clip=recorte, alpha=False)
     img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
     if rotar:
         img = img.rotate(90, expand=True)

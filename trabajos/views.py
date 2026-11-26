@@ -59,7 +59,7 @@ def imprimir(request):
     opciones = None
     if request.GET.get("trabajo", "").isdigit():
         trabajo = Trabajo.objects.filter(pk=request.GET["trabajo"]).first()
-    if trabajo:
+    if trabajo and trabajo.estado != "impreso":
         predeterminado = PerfilImpresion.objects.filter(predeterminado=True).first()
         opciones = OpcionesForm(
             initial={
@@ -85,6 +85,9 @@ def estimacion(request, pk):
     trabajo = get_object_or_404(Trabajo, pk=pk)
     form = OpcionesForm(request.POST)
     ctx = {"trabajo": trabajo, "error": None, "est": None}
+    if trabajo.estado == "impreso":
+        ctx["error"] = "Este trabajo ya se imprimió. Sube el archivo otra vez para reimprimir."
+        return render(request, "trabajos/_estimacion.html", ctx)
     if not form.is_valid():
         ctx["error"] = " ".join(e for errs in form.errors.values() for e in errs)
         return render(request, "trabajos/_estimacion.html", ctx)
@@ -98,6 +101,8 @@ def estimacion(request, pk):
         ctx["error"] = str(e)
     except KeyError as e:
         ctx["error"] = e.args[0]
+    except Exception:  # archivo ilegible, sin memoria, etc.
+        ctx["error"] = "No se pudo leer el archivo. Vuelve a subirlo."
     else:
         servicios.guardar_estimacion(trabajo, est, d["perfil"], paginas, d["escala"])
         ctx["est"] = est
@@ -115,11 +120,18 @@ def confirmar(request, pk):
     if not trabajo.paginas or trabajo.perfil_id is None:
         messages.error(request, "Primero calcula el precio con un perfil.")
         return redirect(url)
-    servicios.imprimir_trabajo(trabajo)
-    if trabajo.estado == "impreso":
+    if request.POST.get("huella") != trabajo.huella():
+        messages.error(request, "Las opciones o el precio cambiaron. Revisa el precio antes de imprimir.")
+        return redirect(url)
+    try:
+        resultado = servicios.imprimir_trabajo(trabajo)
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect(url)
+    if resultado.estado == "impreso":
         messages.info(request, f"Enviado a la impresora: {trabajo.nombre_original} — RD$ {trabajo.total}")
         return redirect("trabajos:imprimir")
-    messages.error(request, f"No se pudo imprimir: {trabajo.mensaje_error}")
+    messages.error(request, f"No se pudo imprimir: {resultado.mensaje_error}")
     return redirect(url)
 
 

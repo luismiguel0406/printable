@@ -33,3 +33,11 @@ class Trabajo(models.Model):
 
     def __str__(self):
         return f"{self.nombre_original} ({self.get_estado_display()})"
+
+    def huella(self) -> str:
+        """Identifica lo que se le mostró al usuario: si algo cambió, no se imprime."""
+        import hashlib
+
+        actualizado = self.perfil.actualizado.isoformat() if self.perfil else ""
+        datos = f"{self.total}|{self.paginas}|{self.copias}|{self.escala}|{self.perfil_id}|{actualizado}"
+        return hashlib.sha256(datos.encode()).hexdigest()[:16]

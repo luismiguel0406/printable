@@ -68,8 +68,8 @@ def test_llenar_cubre_todo(doc_foto):
 
 
 def test_real_usa_dpi_de_la_foto(doc_foto):
-    # 100x100 px a 100 ppp = 1 pulgada = 100 px en lienzo de 100 ppp
-    img = next(rasterizar(doc_foto(100, 100, dpi=100), PAPEL_4x6, "real", 100, [1]))
+    # 200x200 px a 200 ppp = 1 pulgada = 100 px en lienzo de 100 ppp
+    img = next(rasterizar(doc_foto(200, 200, dpi=200), PAPEL_4x6, "real", 100, [1]))
     negros = sum(1 for x in range(400) if img.getpixel((x, 300)) == (0, 0, 0))
     assert negros == 100
 

@@ -81,10 +81,7 @@ def imprimir_trabajo(trabajo):
 
     perfil = trabajo.perfil
     if perfil is None:
-        trabajo.estado = "error"
-        trabajo.mensaje_error = "El perfil de este trabajo ya no existe. Elige otro y vuelve a calcular."
-        trabajo.save()
-        return trabajo
+        raise ValueError("El perfil de este trabajo ya no existe. Elige otro y vuelve a calcular.")
     doc = documento_de(trabajo)
 
     def paginas():
@@ -98,10 +95,17 @@ def imprimir_trabajo(trabajo):
             perfil.impresora, bytes(perfil.devmode), paginas(), trabajo.nombre_original
         )
     except ErrorImpresora as e:
-        trabajo.estado = "error"
-        trabajo.mensaje_error = str(e)
-    else:
-        trabajo.estado = "impreso"
-        trabajo.mensaje_error = ""
+        # El intento fallido queda como registro propio en el historial; el trabajo
+        # original sigue disponible para reintentar.
+        from .models import Trabajo
+
+        fallido = Trabajo.objects.get(pk=trabajo.pk)
+        fallido.pk = None
+        fallido.estado = "error"
+        fallido.mensaje_error = str(e)
+        fallido.save()
+        return fallido
+    trabajo.estado = "impreso"
+    trabajo.mensaje_error = ""
     trabajo.save()
     return trabajo
