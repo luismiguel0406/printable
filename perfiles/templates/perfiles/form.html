@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}{% if perfil %}{{ perfil.nombre }}{% else %}Nuevo perfil{% endif %}{% endblock %}
+{% block contenido %}
+<h1>{% if perfil %}Perfil: {{ perfil.nombre }}{% else %}Nuevo perfil{% endif %}</h1>
+{% if perfil %}
+<div class="tarjeta">
+  <form method="post" action="{% url 'perfiles:preferencias' perfil.pk %}">{% csrf_token %}
+    <button>Abrir preferencias de Epson</button>
+    <small>Se abre la ventana de la impresora. Elige papel, calidad y tamaño y pulsa Aceptar.</small>
+  </form>
+  <p>Impresora: <b>{{ perfil.impresora }}</b><br>
+  Tamaño: <b>{{ perfil.tamano }}</b> ({{ perfil.ancho_mm|floatformat:1 }} × {{ perfil.alto_mm|floatformat:1 }} mm) ·
+  {{ perfil.color|yesno:"Color,Blanco y negro" }} · Calidad: {{ perfil.calidad_texto }}</p>
+  {% if personalizado %}<div class="aviso">Tamaño personalizado. Agrega este tamaño en Tarifas para poder cobrarlo.</div>{% endif %}
+</div>
+{% endif %}
+<form method="post">{% csrf_token %}
+  {% if form.non_field_errors %}<p class="error">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+  {% for campo in form %}
+    <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}
+    {% if campo.help_text %}<small>{{ campo.help_text }}</small>{% endif %}
+    {% for e in campo.errors %}<div class="error">{{ e }}</div>{% endfor %}
+  {% endfor %}
+  <p><button>{% if perfil %}Guardar{% else %}Crear y configurar{% endif %}</button></p>
+</form>
+{% endblock %}
