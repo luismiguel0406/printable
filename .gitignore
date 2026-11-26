@@ -6,3 +6,4 @@ media/
 staticfiles/
 .venv/
 spike_perfil.bin
+.clave_secreta

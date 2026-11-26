@@ -22,10 +22,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-bt0h#2^g4r(32#b#)c$ttlbs2d7c#jjem5=9oja!7#9sp8in4*"
+def _clave_secreta() -> str:
+    if os.environ.get("DJANGO_SECRET_KEY"):
+        return os.environ["DJANGO_SECRET_KEY"]
+    archivo = BASE_DIR / ".clave_secreta"
+    if not archivo.exists():
+        from django.core.management.utils import get_random_secret_key
+
+        archivo.write_text(get_random_secret_key())
+    return archivo.read_text().strip()
+
+
+SECRET_KEY = _clave_secreta()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG") == "1"
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
 
