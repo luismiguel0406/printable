@@ -51,3 +51,57 @@ def estimar(
         detalles.append(DetallePagina(numero, cob, precio, _miniatura(img)))
     total = sum((d.precio.precio for d in detalles), Decimal(0)) * copias
     return Estimacion(detalles, copias, total)
+
+
+def documento_de(trabajo) -> Documento:
+    from pathlib import Path
+
+    return Documento(Path(trabajo.ruta_normalizada), trabajo.tipo_documento, trabajo.total_paginas)
+
+
+def guardar_estimacion(trabajo, est: Estimacion, perfil: PerfilImpresion, paginas, escala) -> None:
+    trabajo.perfil = perfil
+    trabajo.perfil_nombre = perfil.nombre
+    trabajo.escala = escala
+    trabajo.paginas = paginas
+    trabajo.copias = est.copias
+    trabajo.coberturas = [d.cobertura.como_dict() for d in est.detalles]
+    trabajo.precio_unitario_por_pagina = [str(d.precio.precio) for d in est.detalles]
+    trabajo.area_cm2 = perfil.area_cm2()
+    trabajo.factor_calidad = perfil.factor_calidad
+    trabajo.total = est.total
+    trabajo.estado = "estimado"
+    trabajo.mensaje_error = ""
+    trabajo.save()
+
+
+def imprimir_trabajo(trabajo):
+    from impresora import obtener_controlador
+    from impresora.base import ErrorImpresora
+
+    perfil = trabajo.perfil
+    if perfil is None:
+        trabajo.estado = "error"
+        trabajo.mensaje_error = "El perfil de este trabajo ya no existe. Elige otro y vuelve a calcular."
+        trabajo.save()
+        return trabajo
+    doc = documento_de(trabajo)
+
+    def paginas():
+        for _ in range(trabajo.copias):
+            yield from rasterizar(
+                doc, perfil.info_papel(), trabajo.escala, settings.DPI_IMPRESION, trabajo.paginas
+            )
+
+    try:
+        obtener_controlador().imprimir(
+            perfil.impresora, bytes(perfil.devmode), paginas(), trabajo.nombre_original
+        )
+    except ErrorImpresora as e:
+        trabajo.estado = "error"
+        trabajo.mensaje_error = str(e)
+    else:
+        trabajo.estado = "impreso"
+        trabajo.mensaje_error = ""
+    trabajo.save()
+    return trabajo

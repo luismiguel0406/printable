@@ -29,7 +29,7 @@
     .numero { font-variant-numeric:tabular-nums; text-align:right; }
   </style>
 </head>
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <nav>
     <a href="/">Imprimir</a>
     <a href="/perfiles/">Perfiles</a>

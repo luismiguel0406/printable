@@ -9,6 +9,8 @@ ESTADOS = [("estimado", "Estimado"), ("impreso", "Impreso"), ("error", "Error")]
 class Trabajo(models.Model):
     archivo = models.FileField(upload_to="trabajos/%Y/%m/")
     nombre_original = models.CharField(max_length=255)
+    ruta_normalizada = models.CharField(max_length=500, blank=True)
+    tipo_documento = models.CharField(max_length=10, blank=True)  # "pdf" o "imagen"
     total_paginas = models.PositiveIntegerField(default=0)
     perfil = models.ForeignKey(
         "perfiles.PerfilImpresion", null=True, blank=True, on_delete=models.SET_NULL
