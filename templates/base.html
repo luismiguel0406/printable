@@ -129,8 +129,41 @@
     .consola-detalle { margin:0; font-size:.9rem; color:#c9d2de; }
     .consola.ultimos-minutos .contador { color:var(--amarillo-boton); }
     .consola.terminado { border-color:var(--magenta); box-shadow:0 0 0 3px var(--magenta); }
-    .consola.terminado .contador { color:#ff8ec0; animation:parpadeo 1s steps(2, start) infinite; }
     @keyframes parpadeo { to { visibility:hidden; } }
+    /* — Consolas: estilo arcade — */
+    @font-face { font-family:"Press Start 2P"; src:url("/static/fonts/press-start-2p-latin-400-normal.woff2") format("woff2"); font-display:swap; }
+    .consola { transition:transform .2s, box-shadow .2s, border-color .2s; }
+    .consola:hover { transform:translateY(-3px); border-color:var(--cian); box-shadow:0 0 0 1px var(--cian), 0 0 22px color-mix(in srgb, var(--cian) 55%, transparent); }
+    .press-start { font-family:"Press Start 2P", monospace; font-size:.7rem; color:#fff; margin-left:.4rem; text-shadow:0 0 6px var(--cian); animation:parpadeo-suave 2.6s ease-in-out infinite; }
+    @keyframes parpadeo-suave { 0%,100% { opacity:1; } 50% { opacity:.15; } }
+    .contador { font-family:"Press Start 2P", monospace; font-weight:400; font-size:2.3rem; letter-spacing:.04em; margin:.7rem 0 .5rem;
+                color:#eafffb; text-shadow:0 0 4px var(--cian), 0 0 14px var(--cian), 0 0 28px color-mix(in srgb, var(--cian) 60%, transparent); }
+    .consola.ultimos-minutos .contador { color:#fff6d6; text-shadow:0 0 4px var(--amarillo-boton), 0 0 14px var(--amarillo-boton), 0 0 28px var(--amarillo-boton); }
+    .vida { height:12px; border:2px solid #fff; padding:2px; background:rgba(0,0,0,.55); image-rendering:pixelated; margin-bottom:.55rem; }
+    .vida-relleno { height:100%; width:100%; background:#39e66b; box-shadow:0 0 8px #39e66b; transition:width 1s linear, background .4s;
+                    background-image:repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,.35) 9px 11px); }
+    .vida.media .vida-relleno { background-color:#ffd23f; box-shadow:0 0 8px #ffd23f; }
+    .vida.baja .vida-relleno { background-color:#ff3b5c; box-shadow:0 0 10px #ff3b5c; animation:parpadeo .5s steps(2, start) infinite; }
+    .consola.terminado .vida { visibility:hidden; }
+    .consola.terminado .contador { font-size:1.75rem; color:#ff4f7b; white-space:nowrap;
+        text-shadow:3px 0 #00e5ff, -3px 0 #ff00c8, 0 0 18px #ff4f7b; animation:caer .7s cubic-bezier(.3,1.6,.5,1) both, glitch 2.4s steps(1) .7s infinite; }
+    .consola.terminado.sin-caida .contador { animation:glitch 2.4s steps(1) infinite; }
+    @keyframes caer { from { transform:translateY(-120%); } to { transform:translateY(0); } }
+    @keyframes glitch { 0%,86%,100% { transform:none; clip-path:none; } 88% { transform:translate(4px,-2px); clip-path:inset(20% 0 45% 0); }
+                        91% { transform:translate(-5px,2px); clip-path:inset(60% 0 10% 0); } 94% { transform:translate(2px,0); } }
+    .aviso-evento { position:absolute; inset:0; z-index:4; display:grid; place-items:center; pointer-events:none; opacity:0;
+                    font-family:"Press Start 2P", monospace; font-size:1.8rem; color:#fff; text-align:center; line-height:1.4; }
+    .aviso-evento.listo { animation:aviso-listo 1.6s ease-out both; text-shadow:0 0 8px var(--cian), 0 0 26px var(--cian); background:rgba(5,6,12,.6); }
+    .aviso-evento.moneda { animation:aviso-moneda 1.3s ease-out both; color:#ffe14d; text-shadow:0 0 8px #ffb800, 0 0 24px #ffb800; }
+    @keyframes aviso-listo { 0% { opacity:0; transform:scale(2.2); } 15%,85% { opacity:1; transform:scale(1); } 100% { opacity:0; } }
+    @keyframes aviso-moneda { 0% { opacity:0; transform:translateY(40px) scale(.6); } 25% { opacity:1; transform:translateY(0) scale(1.15); } 70% { opacity:1; transform:translateY(-20px) scale(1); } 100% { opacity:0; transform:translateY(-70px); } }
+    .aviso-evento .moneda-icono { display:inline-block; width:1.4rem; height:1.4rem; border-radius:50%; background:#ffd23f; box-shadow:inset -4px 0 #d49a00, 0 0 12px #ffb800; vertical-align:middle; margin-right:.6rem; animation:girar .35s linear infinite; }
+    @keyframes girar { 50% { transform:scaleX(.15); } }
+    @media (prefers-reduced-motion: reduce) {
+      .consola, .consola:hover { transform:none; }
+      .press-start, .vida .vida-relleno, .consola.terminado .contador, .aviso-evento, .aviso-evento .moneda-icono { animation:none !important; }
+      .aviso-evento.listo, .aviso-evento.moneda { opacity:1; }
+    }
     .consola-miniatura { height:140px; border-radius:var(--radio-control); background:var(--imagen) center/cover no-repeat; margin-bottom:.5rem; }
     .numero { font-variant-numeric:tabular-nums; text-align:right; }
     .sugerencia { color:var(--cian); background:var(--cian-oscuro); display:inline-block; padding:.3rem .7rem; border-radius:999px; margin:.75rem 0 0; font-size:.9rem; }
@@ -165,7 +198,7 @@
       .imprimir-rejilla { grid-template-columns:1fr; }
       .panel-precio { position:static; }
     }
-    @media (prefers-reduced-motion: reduce) { * { transition:none !important; } .consola.terminado .contador { animation:none; } }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
   </style>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>

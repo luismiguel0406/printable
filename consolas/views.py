@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from config.permisos import solo_dueno
@@ -45,10 +46,14 @@ def iniciar(request, pk):
     minutos = servicios.minutos_validos(request.POST.get("minutos"))
     if minutos is None:
         messages.error(request, "Elige un tiempo en bloques de 30 minutos (máximo 12 horas).")
-    elif servicios.iniciar(consola, minutos, request.user) is None:
-        messages.error(request, f"{consola} ya está en uso.")
     else:
-        messages.info(request, f"{consola}: {minutos} min, RD$ {servicios.precio_por_minutos(consola, minutos):,.2f}")
+        alquiler = servicios.iniciar(consola, minutos, request.user)
+        if alquiler is None:
+            messages.error(request, f"{consola} ya está en uso.")
+        else:
+            messages.info(request, f"{consola}: {minutos} min, RD$ {alquiler.total:,.2f}")
+            # El navegador muestra «READY? GO!» en esa tarjeta.
+            return redirect(f"{reverse('consolas:lista')}?evento=inicio&alquiler={alquiler.pk}")
     return redirect("consolas:lista")
 
 
@@ -62,6 +67,7 @@ def extender(request, pk):
         antes = alquiler.total
         servicios.extender(alquiler, minutos)
         messages.info(request, f"{alquiler.consola}: +{minutos} min, cobra RD$ {alquiler.total - antes:,.2f} más")
+        return redirect(f"{reverse('consolas:lista')}?evento=extender&alquiler={alquiler.pk}&minutos={minutos}")
     return redirect("consolas:lista")
 
 
