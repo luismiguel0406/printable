@@ -5,7 +5,7 @@
   <h1>Impresoras</h1>
   <form method="post" action="{% url 'impresora:buscar' %}">{% csrf_token %}<button class="secundario">Buscar impresoras</button></form>
 </div>
-{% if not user.is_authenticated %}<div class="aviso">Para cambiar algo aquí, <a href="/admin/login/?next=/impresoras/">entra con tu usuario</a>.</div>{% endif %}
+{% if not user.is_superuser %}<div class="aviso">Cambiar las impresoras es solo para el dueño. <a href="/entrar/?next=/impresoras/">Entrar como dueño</a>.</div>{% endif %}
 <p>Las impresoras <b>controladas</b> solo imprimen lo que sale del sistema: lo que se mande directo se cancela.</p>
 <table>
   <tr><th>Impresora</th><th>Nombre corto</th><th>Estado</th><th>Controlada</th><th></th></tr>
@@ -20,10 +20,10 @@
         <span style="width:7rem">{% if not i.activa %}<span class="error">Desinstalada</span>{% elif not i.en_linea %}<span class="error" title="{{ i.motivo_no_disponible }}">Sin conexión</span>{% else %}Conectada{% endif %}</span>
         {% if i.virtual %}<span style="width:5rem">—</span>{% else %}
         <label style="margin:0;font-weight:400"><input type="checkbox" name="controlada"{% if i.controlada %} checked{% endif %}> Sí</label>{% endif %}
-        <button class="secundario">Guardar</button>
+        {% if user.is_superuser %}<button class="secundario">Guardar</button>{% endif %}
       </form>
     </td>
-    <td>{% if not i.virtual and not i.predeterminada and i.activa and i.en_linea %}
+    <td>{% if user.is_superuser and not i.virtual and not i.predeterminada and i.activa and i.en_linea %}
       <form method="post" action="{% url 'impresora:predeterminada' i.pk %}">{% csrf_token %}<button class="secundario">Predeterminada</button></form>{% endif %}</td>
   </tr>
   {% endfor %}

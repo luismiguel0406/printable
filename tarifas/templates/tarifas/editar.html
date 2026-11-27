@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block titulo %}Tarifas{% endblock %}
+{% block contenido %}
+<h1>Tarifas</h1>
+<form method="get" class="fila" style="margin-bottom:1rem">
+  <div><label for="imp">Impresora</label>
+    <select name="impresora" id="imp" onchange="this.form.submit()">
+      {% for i in impresoras %}<option value="{{ i.pk }}"{% if i == impresora %} selected{% endif %}>{{ i }}</option>{% endfor %}
+    </select></div>
+  <p style="margin:0 0 .4rem"><small>Papel, tinta y copias son de cada impresora. El margen y el redondeo valen para todas.</small></p>
+</form>
+
+{% if impresora %}
+<form method="post">{% csrf_token %}
+  {{ hojas.management_form }}{{ tintas.management_form }}
+  {% for e in hojas.non_form_errors %}<p class="error">{{ e }}</p>{% endfor %}
+
+  <div class="imprimir-rejilla" style="grid-template-columns:minmax(0,1fr) 480px">
+  <div>
+    <h2 style="margin-top:0">Papel</h2>
+    <p><small>Costo de cada hoja y el precio mínimo que cobras por página en ese papel y tamaño.</small></p>
+    <table>
+      <tr><th>Papel</th><th>Tamaño</th><th class="numero">Costo por hoja (RD$)</th><th class="numero">Precio mínimo (RD$)</th></tr>
+      {% for f in hojas %}
+      <tr>
+        <td>{{ f.instance.tipo_papel }}{{ f.id }}</td><td>{{ f.instance.tamano }}</td>
+        <td class="numero"><input type="number" step="0.01" min="0" name="{{ f.costo.html_name }}" value="{{ f.costo.value }}" style="width:7rem;text-align:right" aria-label="Costo {{ f.instance.tipo_papel }} {{ f.instance.tamano }}">
+          {% for e in f.costo.errors %}<div class="error">{{ e }}</div>{% endfor %}</td>
+        <td class="numero"><input type="number" step="0.01" min="0" name="{{ f.precio_minimo.html_name }}" value="{{ f.precio_minimo.value }}" style="width:7rem;text-align:right" aria-label="Precio mínimo {{ f.instance.tipo_papel }} {{ f.instance.tamano }}">
+          {% for e in f.precio_minimo.errors %}<div class="error">{{ e }}</div>{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <p><small>¿Falta un tipo de papel o tamaño? Agrégalo en <a href="/admin/tarifas/tipopapel/">opciones avanzadas</a>.</small></p>
+  </div>
+
+  <aside>
+    <div class="tarjeta">
+      <h2 style="margin-top:0">Tinta</h2>
+      <p><small>Precio de la botella o cartucho y cuántas páginas rinde según el fabricante. El costo por cm² se calcula solo; la calibración lo ajusta con el gasto real.</small></p>
+      <table style="font-size:.9rem">
+        <tr><th>Color</th><th class="numero">Botella RD$</th><th class="numero">Rinde pág.</th><th class="numero">RD$ / cm²</th></tr>
+        {% for f in tintas %}
+        <tr>
+          <td>{{ f.instance.get_canal_display }}{{ f.id }}</td>
+          <td class="numero"><input type="number" step="0.01" min="0" name="{{ f.precio_botella.html_name }}" value="{{ f.precio_botella.value }}" style="width:6rem;text-align:right" aria-label="Botella {{ f.instance.get_canal_display }}"></td>
+          <td class="numero"><input type="number" step="1" min="0" name="{{ f.rendimiento_paginas.html_name }}" value="{{ f.rendimiento_paginas.value }}" style="width:4.6rem;text-align:right" aria-label="Rendimiento {{ f.instance.get_canal_display }}"></td>
+          <td class="numero"><input type="number" step="0.00000001" min="0" name="{{ f.costo_cm2.html_name }}" value="{{ f.costo_cm2.value }}" style="width:7.6rem;text-align:right" aria-label="Costo por cm2 {{ f.instance.get_canal_display }}"></td>
+        </tr>
+        {% for e in f.non_field_errors %}<tr><td colspan="4" class="error">{{ e }}</td></tr>{% endfor %}
+        {% endfor %}
+      </table>
+    </div>
+
+    <div class="tarjeta" style="margin-top:1rem">
+      <h2 style="margin-top:0">Copias</h2>
+      <div class="fila">
+        {% for campo in copias %}<div><label for="{{ campo.id_for_label }}">{{ campo.label }} (RD$)</label>
+          <input type="number" step="0.01" min="0" name="{{ campo.html_name }}" id="{{ campo.id_for_label }}" value="{{ campo.value }}" style="width:7rem">
+          {% for e in campo.errors %}<div class="error">{{ e }}</div>{% endfor %}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="tarjeta" style="margin-top:1rem">
+      <h2 style="margin-top:0">General</h2>
+      {% for campo in general %}
+        <label for="{{ campo.id_for_label }}">{% if campo.name == "margen" %}Margen de ganancia{% else %}Redondeo (RD$){% endif %}</label>
+        <input type="number" step="0.01" min="0" name="{{ campo.html_name }}" id="{{ campo.id_for_label }}" value="{{ campo.value }}" style="width:7rem">
+        <small style="display:block">{{ campo.help_text }}</small>
+        {% for e in campo.errors %}<div class="error">{{ e }}</div>{% endfor %}
+      {% endfor %}
+    </div>
+
+    <p style="margin-top:1rem"><button class="boton-imprimir">Guardar tarifas</button></p>
+  </aside>
+  </div>
+</form>
+{% else %}
+<p>No hay impresoras todavía. Revisa la pantalla <a href="/impresoras/">Impresoras</a>.</p>
+{% endif %}
+{% endblock %}

@@ -6,7 +6,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from config.permisos import solo_dueno
 from impresora.models import Impresora
+
+from . import forms as tarifas_forms
 
 from .calibracion import sugerir_costo_cm2
 from .models import CANALES, CostoTinta, RecargaTinta
@@ -39,6 +42,7 @@ def calibracion(request):
     )
 
 
+@solo_dueno
 @require_POST
 def recarga(request):
     impresora = get_object_or_404(Impresora, pk=request.POST.get("impresora") or 0, virtual=False)
@@ -57,6 +61,7 @@ def recarga(request):
     return _volver(impresora)
 
 
+@solo_dueno
 @require_POST
 def aplicar(request, impresora, canal):
     imp = get_object_or_404(Impresora, pk=impresora)
@@ -69,3 +74,24 @@ def aplicar(request, impresora, canal):
         tinta.save(update_fields=["costo_cm2"])
         messages.info(request, f"Costo de {tinta.get_canal_display()} actualizado en {imp}.")
     return _volver(imp)
+
+
+@solo_dueno
+def editar(request):
+    impresoras = Impresora.objects.filter(virtual=False)
+    elegida = request.GET.get("impresora", "")
+    impresora = (impresoras.filter(pk=elegida).first() if elegida.isdigit() else None) or Impresora.predeterminada_o_primera()
+    if impresora is None:
+        return render(request, "tarifas/editar.html", {"impresoras": impresoras, "impresora": None})
+    formularios = tarifas_forms.formularios_de(impresora, request.POST if request.method == "POST" else None)
+    if request.method == "POST":
+        if all(f.is_valid() for f in formularios):
+            tarifas_forms.guardar(impresora, formularios)
+            messages.info(request, f"Tarifas de {impresora} guardadas.")
+            return redirect(f"{reverse('tarifas:editar')}?impresora={impresora.pk}")
+        messages.error(request, "Revisa los valores marcados: no se guardó nada.")
+    hojas, tintas, copias, general = formularios
+    return render(request, "tarifas/editar.html", {
+        "impresoras": impresoras, "impresora": impresora,
+        "hojas": hojas, "tintas": tintas, "copias": copias, "general": general,
+    })

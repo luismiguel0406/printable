@@ -11,7 +11,7 @@
     </select></div>
 </form>
 
-{% if precios_en_cero %}<div class="aviso">El precio de las copias está en 0 para esta impresora. Ponlo en <a href="/admin/tarifas/preciocopia/">Tarifas → Precios de copia</a>.</div>{% endif %}
+{% if precios_en_cero %}<div class="aviso">El precio de las copias está en 0 para esta impresora. Ponlo en <a href="/tarifas/?impresora={{ impresora.pk }}">Tarifas</a>.</div>{% endif %}
 
 <div class="imprimir-rejilla">
 <div>
@@ -39,7 +39,7 @@
       <td>{{ v.fecha|time:"H:i" }}</td><td>{{ v.impresora|default:"—" }}</td><td>{{ v.get_tipo_display }}</td>
       <td class="numero">{{ v.cantidad }}</td>
       <td class="numero">{% if v.anulada %}Anulada{% else %}RD$ {{ v.total|floatformat:2 }}{% endif %}</td>
-      <td>{% if not v.anulada %}<form method="post" action="{% url 'trabajos:anular_copia' v.pk %}" onsubmit="return confirm('¿Anular esta venta de {{ v.cantidad }} copias?')">{% csrf_token %}<button class="peligro" style="padding:.2rem .6rem">Anular</button></form>{% endif %}</td>
+      <td>{% if not v.anulada and user.is_superuser %}<form method="post" action="{% url 'trabajos:anular_copia' v.pk %}" onsubmit="return confirm('¿Anular esta venta de {{ v.cantidad }} copias?')">{% csrf_token %}<button class="peligro" style="padding:.2rem .6rem">Anular</button></form>{% endif %}</td>
     </tr>
     {% empty %}<tr><td colspan="6">Todavía no hay copias hoy.</td></tr>
     {% endfor %}

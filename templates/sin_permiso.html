@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titulo %}Sin permiso{% endblock %}
+{% block contenido %}
+<div class="tarjeta" style="max-width:520px">
+  <h1>Solo el dueño puede hacer esto</h1>
+  <p>Cambiar precios, perfiles e impresoras requiere el usuario principal de Printable.</p>
+  <form method="post" action="/salir/">{% csrf_token %}<button class="secundario">Entrar con otro usuario</button></form>
+</div>
+{% endblock %}
