@@ -175,12 +175,21 @@ def historial(request):
 
 
 def bandeja(request):
-    recibidos = Trabajo.objects.filter(origen="capturado", estado="estimado", perfil__isnull=True)
+    from django.utils import timezone
+
+    desde = timezone.now() - timezone.timedelta(days=1)
+    recibidos = Trabajo.objects.filter(origen="capturado", estado="estimado", creado__gte=desde)
     return render(
         request,
         "trabajos/_bandeja.html",
         {"recibidos": recibidos[:20], "bloqueos": Bloqueo.objects.filter(visto=False)[:10]},
     )
+
+
+@require_POST
+def quitar(request, pk):
+    Trabajo.objects.filter(pk=pk, estado="estimado").update(estado="descartado")
+    return bandeja(request)
 
 
 @require_POST

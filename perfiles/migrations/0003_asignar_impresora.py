@@ -1,10 +1,15 @@
 from django.db import migrations
 
+VIRTUALES = ["printable", "microsoft print to pdf", "microsoft xps document writer", "onenote", "fax"]
+
 
 def asignar(apps, schema_editor):
     Impresora = apps.get_model("impresora", "Impresora")
     for p in apps.get_model("perfiles", "PerfilImpresion").objects.all():
-        p.impresora_ref, _ = Impresora.objects.get_or_create(nombre_windows=p.impresora)
+        virtual = any(v in p.impresora.lower() for v in VIRTUALES)
+        p.impresora_ref, _ = Impresora.objects.get_or_create(
+            nombre_windows=p.impresora, defaults={"virtual": virtual, "controlada": not virtual}
+        )
         p.save(update_fields=["impresora_ref"])
 
 

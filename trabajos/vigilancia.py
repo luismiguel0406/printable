@@ -11,6 +11,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db import close_old_connections
+from django.utils import timezone
 
 from impresora.base import ErrorImpresora
 from impresora.models import Impresora
@@ -26,11 +27,14 @@ ESPERA_RECHAZO = 60  # segundos
 INTERVALO_COLAS = 0.5
 INTERVALO_CARPETA = 1.0
 INTERVALO_IMPRESORAS = 30.0
+VIGENCIA_ENVIO = timezone.timedelta(hours=2)  # un trabajo del sistema puede tardar en salir
 
 
 def es_del_sistema(documento: str) -> bool:
     m = PREFIJO.match(documento or "")
-    return bool(m) and Trabajo.objects.filter(pk=int(m.group(1))).exists()
+    return bool(m) and Trabajo.objects.filter(
+        pk=int(m.group(1)), enviado_en__gte=timezone.now() - VIGENCIA_ENVIO
+    ).exists()
 
 
 def _nombre_trabajo(ruta: Path) -> str:
@@ -63,7 +67,7 @@ class Vigilante:
         self.controlador = controlador
         self._vistos: dict[str, tuple[int, float]] = {}  # nombre → (tamaño, primera vez)
         self._manejados: set[tuple[str, int]] = set()
-        self._hilo: threading.Thread | None = None
+        self._hilos: list[threading.Thread] = []
         self._parar = threading.Event()
 
     def _ctrl(self):
@@ -75,8 +79,6 @@ class Vigilante:
 
     # --- Ctrl+P → carpeta de entrada ---------------------------------------
     def revisar_carpeta(self, ahora: float) -> list[Trabajo]:
-        from .servicios import crear_trabajo_desde
-
         capturados = []
         presentes = set()
         for archivo in sorted(p for p in self.carpeta.iterdir() if p.is_file() and p.suffix.lower() == ".pdf"):
@@ -85,36 +87,48 @@ class Vigilante:
                 tamano = archivo.stat().st_size
             except OSError:
                 continue
-            anterior = self._vistos.get(archivo.name)
-            primera = anterior[1] if anterior else ahora
-            if anterior is None or anterior[0] != tamano or tamano == 0:
-                self._vistos[archivo.name] = (tamano, primera)
-                continue
             try:
-                normalizar(archivo, archivo.parent)
-            except ArchivoNoValido:
-                if ahora - primera >= ESPERA_RECHAZO:
-                    _mover_sin_pisar(archivo, self.carpeta / "rechazados")
-                    log.warning("PDF ilegible movido a rechazados: %s", archivo.name)
-                    self._vistos.pop(archivo.name, None)
+                trabajo = self._capturar(archivo, tamano, ahora)
+            except OSError as e:  # p. ej. clawPDF todavía tiene el archivo abierto
+                log.info("Aún no se puede tomar %s: %s", archivo.name, e)
                 continue
-            nombre = _nombre_trabajo(archivo)
-            hoy = date.today()
-            carpeta_media = Path(settings.MEDIA_ROOT) / "trabajos" / f"{hoy:%Y}" / f"{hoy:%m}"
-            nombre_disponible = Path(
-                default_storage.get_available_name(f"trabajos/{hoy:%Y}/{hoy:%m}/{archivo.name}")
-            ).name
-            carpeta_media.mkdir(parents=True, exist_ok=True)
-            destino = carpeta_media / nombre_disponible
-            shutil.move(str(archivo), destino)
-            self._vistos.pop(archivo.name, None)
-            try:
-                capturados.append(crear_trabajo_desde(destino, nombre, "capturado"))
-            except ArchivoNoValido:
-                _mover_sin_pisar(destino, self.carpeta / "rechazados")
+            if trabajo is not None:
+                capturados.append(trabajo)
         for nombre in set(self._vistos) - presentes:
             del self._vistos[nombre]
         return capturados
+
+    def _capturar(self, archivo: Path, tamano: int, ahora: float) -> Trabajo | None:
+        from .servicios import crear_trabajo_desde
+
+        anterior = self._vistos.get(archivo.name)
+        primera = anterior[1] if anterior else ahora
+        if anterior is None or anterior[0] != tamano or tamano == 0:
+            self._vistos[archivo.name] = (tamano, primera)
+            return None
+        try:
+            normalizar(archivo, archivo.parent)
+        except ArchivoNoValido:
+            if ahora - primera >= ESPERA_RECHAZO:
+                _mover_sin_pisar(archivo, self.carpeta / "rechazados")
+                log.warning("PDF ilegible movido a rechazados: %s", archivo.name)
+                self._vistos.pop(archivo.name, None)
+            return None
+        nombre = _nombre_trabajo(archivo)
+        hoy = date.today()
+        carpeta_media = Path(settings.MEDIA_ROOT) / "trabajos" / f"{hoy:%Y}" / f"{hoy:%m}"
+        nombre_disponible = Path(
+            default_storage.get_available_name(f"trabajos/{hoy:%Y}/{hoy:%m}/{archivo.name}")
+        ).name
+        carpeta_media.mkdir(parents=True, exist_ok=True)
+        destino = carpeta_media / nombre_disponible
+        shutil.move(str(archivo), destino)
+        self._vistos.pop(archivo.name, None)
+        try:
+            return crear_trabajo_desde(destino, nombre, "capturado")
+        except ArchivoNoValido:
+            _mover_sin_pisar(destino, self.carpeta / "rechazados")
+            return None
 
     # --- Impresiones directas -------------------------------------------------
     def revisar_colas(self) -> list[Bloqueo]:
@@ -143,9 +157,9 @@ class Vigilante:
         return bloqueos
 
     # --- Bucle ----------------------------------------------------------------
-    def ciclo(self, ahora: float, *, carpeta: bool = True, impresoras: bool = False) -> None:
+    def ciclo(self, ahora: float, *, colas: bool = True, carpeta: bool = True, impresoras: bool = False) -> None:
         for tarea, activa in [
-            (self.revisar_colas, True),
+            (lambda: self.revisar_colas(), colas),
             (lambda: self.revisar_carpeta(ahora), carpeta),
             (self._sincronizar, impresoras),
         ]:
@@ -162,26 +176,36 @@ class Vigilante:
 
         sincronizar_impresoras()
 
-    def _bucle(self) -> None:
-        ultima_carpeta = ultima_impresoras = 0.0
+    def _repetir(self, tarea, intervalo: float) -> None:
         while not self._parar.is_set():
-            ahora = time.monotonic()
             close_old_connections()
-            self.ciclo(
-                ahora,
-                carpeta=ahora - ultima_carpeta >= INTERVALO_CARPETA,
-                impresoras=ahora - ultima_impresoras >= INTERVALO_IMPRESORAS,
-            )
-            if ahora - ultima_carpeta >= INTERVALO_CARPETA:
-                ultima_carpeta = ahora
-            if ahora - ultima_impresoras >= INTERVALO_IMPRESORAS:
-                ultima_impresoras = ahora
-            self._parar.wait(INTERVALO_COLAS)
+            try:
+                tarea()
+            except Exception:
+                log.exception("Error en el vigilante")
+            self._parar.wait(intervalo)
+
+    def _bucle_carpeta(self) -> None:
+        ultima_sincronizacion = float("-inf")
+        while not self._parar.is_set():
+            close_old_connections()
+            ahora = time.monotonic()
+            hacer_sync = ahora - ultima_sincronizacion >= INTERVALO_IMPRESORAS
+            self.ciclo(ahora, colas=False, carpeta=True, impresoras=hacer_sync)
+            if hacer_sync:
+                ultima_sincronizacion = ahora
+            self._parar.wait(INTERVALO_CARPETA)
 
     def iniciar(self) -> None:
+        """Dos hilos: las colas nunca esperan a que termine una captura larga."""
         (self.carpeta / "rechazados").mkdir(parents=True, exist_ok=True)
-        self._hilo = threading.Thread(target=self._bucle, name="vigilante", daemon=True)
-        self._hilo.start()
+        self._hilos = [
+            threading.Thread(target=self._repetir, args=(lambda: self.revisar_colas(), INTERVALO_COLAS),
+                             name="vigilante-colas", daemon=True),
+            threading.Thread(target=self._bucle_carpeta, name="vigilante-carpeta", daemon=True),
+        ]
+        for hilo in self._hilos:
+            hilo.start()
 
     def detener(self) -> None:
         self._parar.set()

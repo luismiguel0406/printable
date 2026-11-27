@@ -3,7 +3,9 @@ from decimal import Decimal
 from django.db import models
 
 ESCALAS = [("ajustar", "Ajustar a la página"), ("real", "Tamaño real"), ("llenar", "Llenar (recortar)")]
-ESTADOS = [("estimado", "Estimado"), ("impreso", "Impreso"), ("error", "Error")]
+ESTADOS = [
+    ("estimado", "Pendiente"), ("impreso", "Impreso"), ("error", "Error"), ("descartado", "Descartado"),
+]
 
 
 class Trabajo(models.Model):
@@ -33,6 +35,7 @@ class Trabajo(models.Model):
     total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0"))
     estado = models.CharField(max_length=10, choices=ESTADOS, default="estimado")
     mensaje_error = models.TextField(blank=True)
+    enviado_en = models.DateTimeField(null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:

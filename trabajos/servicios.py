@@ -110,6 +110,11 @@ def imprimir_trabajo(trabajo):
     if perfil is None:
         raise ValueError("El perfil de este trabajo ya no existe. Elige otro y vuelve a calcular.")
     doc = documento_de(trabajo)
+    # El vigilante solo deja pasar trabajos enviados hace poco (ver vigilancia.es_del_sistema).
+    from django.utils import timezone
+
+    trabajo.enviado_en = timezone.now()
+    trabajo.save(update_fields=["enviado_en"])
 
     def paginas():
         for _ in range(trabajo.copias):

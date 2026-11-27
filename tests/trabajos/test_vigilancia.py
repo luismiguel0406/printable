@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from trabajos.models import Bloqueo, Trabajo
 from trabajos.vigilancia import Vigilante, es_del_sistema
@@ -83,7 +84,7 @@ def test_bloquea_trabajo_directo(vigilante, controlador_falso):
 
 
 def test_no_cancela_trabajos_del_sistema(vigilante, controlador_falso):
-    t = Trabajo.objects.create(nombre_original="foto.jpg")
+    t = Trabajo.objects.create(nombre_original="foto.jpg", enviado_en=timezone.now())
     controlador_falso.encolar(EPSON, f"Printable#{t.pk} foto.jpg")
     assert vigilante.revisar_colas() == [] and controlador_falso.cancelados == []
 
@@ -113,7 +114,7 @@ def test_no_registra_dos_veces_si_no_se_pudo_cancelar(vigilante, controlador_fal
 
 @pytest.mark.parametrize("doc,esperado", [("Printable#{pk} a.pdf", True), ("Printable#{pk}", False), ("printable#{pk} a", False), ("x Printable#{pk} a", False)])
 def test_es_del_sistema(db, doc, esperado):
-    t = Trabajo.objects.create(nombre_original="a")
+    t = Trabajo.objects.create(nombre_original="a", enviado_en=timezone.now())
     assert es_del_sistema(doc.format(pk=t.pk)) is esperado
 
 

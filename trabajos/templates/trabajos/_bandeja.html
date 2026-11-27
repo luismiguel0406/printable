@@ -10,7 +10,9 @@
   <b>Trabajos recibidos (Ctrl+P)</b>
   <ul style="margin:.4rem 0 0">
     {% for t in recibidos %}
-    <li><a href="/?trabajo={{ t.pk }}">{{ t.nombre_original }}</a> · {{ t.total_paginas }} pág. · {{ t.creado|time:"H:i" }}</li>
+    <li><a href="/?trabajo={{ t.pk }}">{{ t.nombre_original }}</a> · {{ t.total_paginas }} pág. · {{ t.creado|time:"H:i" }}
+      {% if t.total %} · RD$ {{ t.total }}{% endif %}
+      <button class="secundario" style="padding:.1rem .5rem;font-size:.85rem" hx-post="{% url 'trabajos:quitar' t.pk %}" hx-target="#bandeja">Quitar</button></li>
     {% endfor %}
   </ul>
 </div>
