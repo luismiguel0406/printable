@@ -1,9 +1,11 @@
 {% load static %}<!DOCTYPE html>
-<html lang="es" data-tema="{{ tema }}">
+<html lang="es" data-tema="{{ tema }}" data-modo="{{ modo }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Impresión{% endblock %} · Printable</title>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="alternate icon" href="{% static 'favicon.ico' %}">
   <script src="{% static 'js/htmx.min.js' %}"></script>
   <style>
     @font-face { font-family:"Atkinson Hyperlegible"; font-weight:400; font-display:swap;
@@ -21,6 +23,7 @@
       /* nombres usados por las plantillas */
       --primario:var(--cian); --error:var(--magenta); --suave:var(--superficie);
       --radio:10px; --radio-control:7px; --texto-boton:#08262e;
+      --aviso-borde:#6b5a26; --bloqueo-borde:#6e2c4c; --amarillo-boton:#e6c35c; --resalte:rgba(255,255,255,.02); --tinta-negra:#e4e8ee;
     }
     /* Temas: el color de acción y el fondo que lo acompaña */
     [data-tema="azul"] { --fondo:#11151f; --superficie:#191f2d; --superficie-alta:#212a3b; --borde:#2d3850;
@@ -29,6 +32,16 @@
       --cian:#b49cff; --cian-oscuro:#2e2650; --texto-boton:#1d1240; }
     [data-tema="menta"] { --fondo:#111a19; --superficie:#182321; --superficie-alta:#202e2b; --borde:#2c3e3a;
       --cian:#5fd3a6; --cian-oscuro:#123a2e; --texto-boton:#06281c; }
+    /* Modo claro: gris suave, nunca blanco puro. Los colores de acción se oscurecen para leerse bien. */
+    html[data-modo="claro"] { color-scheme:light;
+      --fondo:#e8ecf1; --superficie:#f5f7fa; --superficie-alta:#e0e5ec; --borde:#c6cfd9;
+      --texto:#1b2330; --texto-suave:#536175;
+      --cian:#0b7a91; --cian-oscuro:#d5edf2; --texto-boton:#ffffff;
+      --magenta:#b42f6b; --magenta-oscuro:#f6e0ea; --amarillo:#8a6100; --amarillo-oscuro:#fbf0d0;
+      --aviso-borde:#e3c879; --bloqueo-borde:#e5a9c4; --amarillo-boton:#e2b23a; --resalte:rgba(0,0,0,.03); --tinta-negra:#1b2330; }
+    html[data-modo="claro"][data-tema="azul"] { --cian:#2c5bcc; --cian-oscuro:#dde6fa; }
+    html[data-modo="claro"][data-tema="violeta"] { --cian:#6646cf; --cian-oscuro:#e8e2fb; }
+    html[data-modo="claro"][data-tema="menta"] { --cian:#0d7c59; --cian-oscuro:#d6f0e5; }
     * { box-sizing:border-box; }
     html { background:var(--fondo); }
     body { font-family:"Atkinson Hyperlegible",system-ui,"Segoe UI",sans-serif; font-size:15px; line-height:1.5;
@@ -44,10 +57,16 @@
     .marca-tintas i { width:9px; height:9px; border-radius:50%; }
     .lateral nav a { display:block; padding:.55rem .75rem; border-radius:var(--radio-control); color:var(--texto-suave); text-decoration:none; font-weight:700; }
     .lateral nav a:hover { color:var(--texto); background:var(--superficie-alta); }
-    .temas { margin-top:auto; padding:.75rem; }
+    .usuario { margin-top:auto; padding:.75rem; display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+    .usuario a { font-weight:700; }
+    button.enlace { background:none; border:0; padding:0; color:var(--cian); font-weight:700; }
+    .temas { padding:.25rem .75rem .75rem; }
     .temas small { display:block; margin-bottom:.4rem; }
-    .temas form { display:flex; gap:.5rem; }
+    .temas form { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
     .temas button { width:22px; height:22px; padding:0; border-radius:50%; border:2px solid transparent; }
+    .temas .modo { width:auto; height:26px; border-radius:999px; padding:0 .7rem; white-space:nowrap;
+      background:var(--superficie-alta); color:var(--texto); border:1px solid var(--borde); font-size:.8rem; }
+    .boton-color { background:var(--amarillo-boton); color:#2b2208; }
     .temas button[aria-pressed="true"] { border-color:var(--texto); box-shadow:0 0 0 2px var(--superficie) inset; }
     .lateral nav a[aria-current="page"] { color:var(--texto); background:var(--superficie-alta); box-shadow:inset 3px 0 0 var(--cian); }
 
@@ -60,7 +79,7 @@
     table { border-collapse:collapse; width:100%; }
     th { text-align:left; color:var(--texto-suave); font-weight:700; font-size:.9rem; padding:.55rem .6rem; border-bottom:1px solid var(--borde); }
     td { text-align:left; padding:.6rem; border-bottom:1px solid var(--borde); vertical-align:top; }
-    tbody tr:hover td, table tr:hover td { background:rgba(255,255,255,.02); }
+    tbody tr:hover td, table tr:hover td { background:var(--resalte); }
 
     button, .boton { font:inherit; font-weight:700; background:var(--cian); color:#08262e; border:0; border-radius:var(--radio-control);
       padding:.55rem 1rem; cursor:pointer; text-decoration:none; display:inline-block; }
@@ -77,9 +96,9 @@
     label { display:block; margin:.6rem 0 .25rem; font-weight:700; color:var(--texto-suave); font-size:.9rem; }
 
     .error { color:var(--magenta); }
-    .aviso { background:var(--amarillo-oscuro); border:1px solid #6b5a26; border-left:4px solid var(--amarillo);
+    .aviso { background:var(--amarillo-oscuro); border:1px solid var(--aviso-borde); border-left:4px solid var(--amarillo);
       padding:.7rem .9rem; border-radius:var(--radio-control); margin:.75rem 0; }
-    .aviso-bloqueo { background:var(--magenta-oscuro); border-color:#6e2c4c; border-left-color:var(--magenta); }
+    .aviso-bloqueo { background:var(--magenta-oscuro); border-color:var(--bloqueo-borde); border-left-color:var(--magenta); }
     .aviso button { margin-left:.5rem; }
     .insignia { background:var(--amarillo-oscuro); color:var(--amarillo); border-radius:999px; padding:.05rem .55rem; font-size:.8rem; font-weight:700; white-space:nowrap; }
     .insignia-cian { background:var(--cian-oscuro); color:var(--cian); }
@@ -100,7 +119,7 @@
     .panel-precio { position:sticky; top:1.5rem; }
     .panel-precio .tarjeta { border-top:0; padding-top:1.4rem; position:relative; overflow:hidden; }
     .panel-precio .tarjeta::before { content:""; position:absolute; inset:0 0 auto 0; height:4px;
-      background:linear-gradient(90deg,var(--cian) 0 25%,var(--magenta) 25% 50%,var(--amarillo) 50% 75%,#e4e8ee 75%); }
+      background:linear-gradient(90deg,var(--cian) 0 25%,var(--magenta) 25% 50%,var(--amarillo) 50% 75%,var(--tinta-negra) 75%); }
     .total { font-size:2.4rem; font-weight:700; line-height:1.1; font-variant-numeric:tabular-nums; margin:.2rem 0 1rem; }
     .boton-imprimir { width:100%; font-size:1.1rem; padding:.8rem 1rem; }
     .miniaturas-precio { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:1rem; }
@@ -124,7 +143,7 @@
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <aside class="lateral">
-    <a class="marca" href="/"><span class="marca-tintas" aria-hidden="true"><i style="background:var(--cian)"></i><i style="background:var(--magenta)"></i><i style="background:var(--amarillo)"></i><i style="background:var(--texto)"></i></span>Printable</a>
+    <a class="marca" href="/"><span class="marca-tintas" aria-hidden="true"><i style="background:var(--cian)"></i><i style="background:var(--magenta)"></i><i style="background:var(--amarillo)"></i><i style="background:var(--tinta-negra)"></i></span>Printable</a>
     <nav>
       {% with r=request.path %}
       <a href="/"{% if r == "/" %} aria-current="page"{% endif %}>Imprimir</a>
@@ -133,9 +152,17 @@
       <a href="/copias/"{% if r|slice:":8" == "/copias/" %} aria-current="page"{% endif %}>Copias</a>
       <a href="/historial/"{% if r == "/historial/" %} aria-current="page"{% endif %}>Historial</a>
       <a href="/tarifas/calibracion/"{% if r|slice:":21" == "/tarifas/calibracion/" %} aria-current="page"{% endif %}>Calibración</a>
-      <a href="/admin/tarifas/">Tarifas</a>
+      <a href="/tarifas/"{% if r == "/tarifas/" %} aria-current="page"{% endif %}>Tarifas</a>
       {% endwith %}
     </nav>
+    <div class="usuario">
+      {% if user.is_authenticated %}
+      <small>{{ user.get_username }}{% if user.is_superuser %} (dueño){% endif %}</small>
+      <form method="post" action="/salir/">{% csrf_token %}<button class="enlace">Salir</button></form>
+      {% else %}
+      <a href="/entrar/?next={{ request.get_full_path|urlencode }}">Entrar</a>
+      {% endif %}
+    </div>
     <div class="temas">
       <small>Color</small>
       <form method="post" action="{% url 'tema' %}">{% csrf_token %}
@@ -145,6 +172,11 @@
                 aria-pressed="{% if valor == tema %}true{% else %}false{% endif %}"
                 style="background:{% if valor == 'cian' %}#4fc3dc{% elif valor == 'azul' %}#7aa7ff{% elif valor == 'violeta' %}#b49cff{% else %}#5fd3a6{% endif %}"></button>
         {% endfor %}
+        {% if modo == "claro" %}
+        <button name="modo" value="oscuro" class="modo" aria-label="Cambiar a modo oscuro" title="Modo oscuro">☾ Oscuro</button>
+        {% else %}
+        <button name="modo" value="claro" class="modo" aria-label="Cambiar a modo claro" title="Modo claro">☀ Claro</button>
+        {% endif %}
       </form>
     </div>
   </aside>

@@ -161,7 +161,8 @@ IMPRESORA_BACKEND = os.environ.get(
 DPI_MEDICION = 100
 DPI_IMPRESION = 360
 MONEDA = "RD$"
-LOGIN_URL = "/admin/login/"
+LOGIN_URL = "/entrar/"
+LOGIN_REDIRECT_URL = "/"
 IMPRESORAS_VIRTUALES = [
     "Printable", "Microsoft Print to PDF", "Microsoft XPS Document Writer", "OneNote", "Fax",
 ]

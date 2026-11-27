@@ -1,4 +1,38 @@
 import pytest
+from django.test import Client
+
+
+def pytest_configure(config):
+    from django.conf import settings
+
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]  # pruebas rápidas
+
+
+@pytest.fixture
+def admin_user(db, django_user_model):
+    usuario = django_user_model.objects.filter(is_superuser=True).first()
+    return usuario or django_user_model.objects.create_superuser("admin-pruebas", "", "clave-de-prueba")
+
+
+@pytest.fixture
+def client(admin_user):
+    """En las pruebas se trabaja como el superusuario (dueño); `cliente_anonimo` y `cliente_empleado` para lo demás."""
+    c = Client()
+    c.force_login(admin_user)
+    return c
+
+
+@pytest.fixture
+def cliente_anonimo():
+    return Client()
+
+
+@pytest.fixture
+def cliente_empleado(db, django_user_model):
+    usuario = django_user_model.objects.create_user("caja", "", "clave-caja-123")
+    c = Client()
+    c.force_login(usuario)
+    return c
 
 
 def pytest_configure(config):

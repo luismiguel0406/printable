@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from config.permisos import solo_dueno
 from impresora.base import ErrorImpresora
 from impresora.papeles import PERSONALIZADO
 
@@ -21,6 +22,7 @@ def lista(request):
     return render(request, "perfiles/lista.html", {"perfiles": perfiles})
 
 
+@solo_dueno
 def nuevo(request):
     form = NuevoPerfilForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -39,6 +41,7 @@ def nuevo(request):
     return render(request, "perfiles/form.html", {"form": form, "perfil": None})
 
 
+@solo_dueno
 def editar(request, pk):
     perfil = get_object_or_404(PerfilImpresion, pk=pk)
     form = EditarPerfilForm(request.POST or None, instance=perfil)
@@ -53,6 +56,7 @@ def editar(request, pk):
     )
 
 
+@solo_dueno
 @require_POST
 def preferencias(request, pk):
     perfil = get_object_or_404(PerfilImpresion, pk=pk)
@@ -66,6 +70,7 @@ def preferencias(request, pk):
     return redirect("perfiles:editar", perfil.pk)
 
 
+@solo_dueno
 @require_POST
 def duplicar(request, pk):
     perfil = get_object_or_404(PerfilImpresion, pk=pk)
@@ -73,6 +78,7 @@ def duplicar(request, pk):
     return redirect("perfiles:editar", copia.pk)
 
 
+@solo_dueno
 @require_POST
 def eliminar(request, pk):
     get_object_or_404(PerfilImpresion, pk=pk).delete()
@@ -80,6 +86,7 @@ def eliminar(request, pk):
     return redirect("perfiles:lista")
 
 
+@solo_dueno
 @require_POST
 def predeterminado(request, pk):
     servicios.marcar_predeterminado(get_object_or_404(PerfilImpresion, pk=pk))

@@ -5,7 +5,7 @@ from django.contrib.auth import login, password_validation
 from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
 
-LIBRES = ("/primer-uso/", "/static/")
+LIBRES = ("/primer-uso/", "/static/", "/favicon.ico")
 
 
 def hay_usuario() -> bool:

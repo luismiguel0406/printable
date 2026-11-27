@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from config.permisos import solo_dueno
 from impresora.models import Impresora
 from tarifas.models import PrecioCopia
 
@@ -133,6 +134,7 @@ def copias(request):
     return redirect(f"/copias/?impresora={d['impresora'].pk}")
 
 
+@solo_dueno
 @require_POST
 def anular(request, pk):
     v = get_object_or_404(VentaCopia, pk=pk)
