@@ -1,30 +1,54 @@
 """Arranca el sistema en http://127.0.0.1:8000 (uso: python -m config.servir)."""
 
 import os
+import socket
+
+PUERTO = 8000
+URL = f"http://127.0.0.1:{PUERTO}/"
 
 
-def main() -> None:
+def servidor_activo(puerto: int = PUERTO) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", puerto), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
+def preparar() -> None:
+    """Django listo, base migrada, impresoras detectadas y vigilante en marcha."""
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
     import django
 
     django.setup()
+    from django.conf import settings
     from django.core.management import call_command
-    from django.core.wsgi import get_wsgi_application
-    from waitress import serve
 
     call_command("migrate", interactive=False, verbosity=0)
-    call_command("collectstatic", interactive=False, verbosity=0)
-
-    from django.conf import settings
+    if not os.environ.get("PRINTABLE_DATOS"):  # instalado: los estáticos vienen recolectados
+        call_command("collectstatic", interactive=False, verbosity=0)
 
     from impresora.servicios import sincronizar_impresoras
     from trabajos.vigilancia import Vigilante
 
     sincronizar_impresoras()
     Vigilante(settings.CARPETA_ENTRADA).iniciar()
+
+
+def servir() -> None:
+    from django.core.wsgi import get_wsgi_application
+    from waitress import serve
+
+    serve(get_wsgi_application(), host="127.0.0.1", port=PUERTO, threads=4)
+
+
+def main() -> None:
+    preparar()
+    from django.conf import settings
+
     print(f"Vigilando la carpeta {settings.CARPETA_ENTRADA} y las colas de impresión")
-    print("Sistema de impresión en http://127.0.0.1:8000  (Ctrl+C para detener)")
-    serve(get_wsgi_application(), host="127.0.0.1", port=8000, threads=4)
+    print(f"Sistema de impresión en {URL}  (Ctrl+C para detener)")
+    servir()
 
 
 if __name__ == "__main__":

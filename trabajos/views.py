@@ -109,6 +109,7 @@ def imprimir(request):
             "hay_color_y_bn": len({c for _, _, c, _ in selector if c is not None}) == 2,
             "hay_perfiles": PerfilImpresion.objects.exists(),
             "hay_impresoras": Impresora.disponibles().exists(),
+            "falta_printable": not Impresora.objects.filter(nombre_windows__iexact="Printable", activa=True).exists(),
         },
     )
 
