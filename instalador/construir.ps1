@@ -6,7 +6,7 @@ $ProgressPreference = "SilentlyContinue"
 
 # Descargas fijas y verificadas. Si cambias una versión, actualiza su SHA-256.
 $PyVersion = "3.12.10"
-$PySha256 = ""   # se fija con el primer build (ver el mensaje de error)
+$PySha256 = "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
 $ClawVersion = "0.9.3"
 $ClawSha256 = "4b8102955e7a75149c45efc968643db87b3aed85753136b186734ee1c614298c"
 
