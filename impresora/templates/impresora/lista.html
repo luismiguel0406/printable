@@ -13,7 +13,7 @@
   <tr>
     <td>{{ i.nombre_windows }}
       {% if i.predeterminada %}<span class="insignia">Predeterminada</span>{% endif %}
-      {% if i.virtual %}<span class="insignia" style="background:#dbe7ff">Virtual</span>{% endif %}</td>
+      {% if i.virtual %}<span class="insignia insignia-cian">Virtual</span>{% endif %}</td>
     <td colspan="3">
       <form method="post" action="{% url 'impresora:guardar' i.pk %}" class="fila" style="align-items:center">{% csrf_token %}
         <input name="alias" value="{{ i.alias }}" placeholder="Ej. Epson fotos" style="width:12rem">
@@ -23,7 +23,7 @@
         <button class="secundario">Guardar</button>
       </form>
     </td>
-    <td>{% if not i.virtual and not i.predeterminada and i.activa %}
+    <td>{% if not i.virtual and not i.predeterminada and i.activa and i.en_linea %}
       <form method="post" action="{% url 'impresora:predeterminada' i.pk %}">{% csrf_token %}<button class="secundario">Predeterminada</button></form>{% endif %}</td>
   </tr>
   {% endfor %}

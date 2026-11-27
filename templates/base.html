@@ -3,46 +3,125 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}Impresión{% endblock %} · Sistema de impresión</title>
+  <title>{% block titulo %}Impresión{% endblock %} · Printable</title>
   <script src="{% static 'js/htmx.min.js' %}"></script>
   <style>
-    :root { --borde:#d0d4da; --primario:#1f5fbf; --error:#b42318; --suave:#f4f6f8; }
+    @font-face { font-family:"Atkinson Hyperlegible"; font-weight:400; font-display:swap;
+      src:url("{% static 'fonts/atkinson-hyperlegible-latin-400-normal.woff2' %}") format("woff2"); }
+    @font-face { font-family:"Atkinson Hyperlegible"; font-weight:700; font-display:swap;
+      src:url("{% static 'fonts/atkinson-hyperlegible-latin-700-normal.woff2' %}") format("woff2"); }
+    /* Tinta sobre pizarra: fondo oscuro azulado, y los colores de las tintas con significado:
+       cian = acción, magenta = bloqueo o error, amarillo = aviso. */
+    :root {
+      color-scheme: dark;
+      --fondo:#131923; --superficie:#1b2330; --superficie-alta:#232d3d; --borde:#2f3b4d;
+      --texto:#e4e8ee; --texto-suave:#98a3b5;
+      --cian:#4fc3dc; --cian-oscuro:#0f3a46; --magenta:#e0629f; --magenta-oscuro:#3d1a2c;
+      --amarillo:#e6c35c; --amarillo-oscuro:#3a3118;
+      /* nombres usados por las plantillas */
+      --primario:var(--cian); --error:var(--magenta); --suave:var(--superficie);
+      --radio:10px; --radio-control:7px;
+    }
     * { box-sizing:border-box; }
-    body { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; margin:0; color:#1b1f24; background:#fff; }
-    nav { display:flex; gap:1.25rem; padding:.75rem 1.5rem; background:#16213a; }
-    nav a { color:#e8edf5; text-decoration:none; font-weight:500; }
-    nav a:hover { text-decoration:underline; }
-    main { max-width:1100px; margin:1.5rem auto; padding:0 1.5rem; }
-    h1 { font-size:1.5rem; margin:0 0 1rem; }
+    html { background:var(--fondo); }
+    body { font-family:"Atkinson Hyperlegible",system-ui,"Segoe UI",sans-serif; font-size:15px; line-height:1.5;
+      margin:0; color:var(--texto); background:var(--fondo); display:grid; grid-template-columns:212px 1fr; min-height:100vh; }
+    a { color:var(--cian); }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, label:focus-within {
+      outline:2px solid var(--cian); outline-offset:2px; }
+
+    .lateral { background:var(--superficie); border-right:1px solid var(--borde); padding:1.25rem .75rem;
+      position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:.15rem; }
+    .marca { display:flex; align-items:center; gap:.6rem; padding:0 .6rem 1.25rem; font-weight:700; font-size:1.15rem; color:var(--texto); text-decoration:none; }
+    .marca-tintas { display:grid; grid-template-columns:repeat(2,9px); gap:3px; }
+    .marca-tintas i { width:9px; height:9px; border-radius:50%; }
+    .lateral nav a { display:block; padding:.55rem .75rem; border-radius:var(--radio-control); color:var(--texto-suave); text-decoration:none; font-weight:700; }
+    .lateral nav a:hover { color:var(--texto); background:var(--superficie-alta); }
+    .lateral nav a[aria-current="page"] { color:var(--texto); background:var(--superficie-alta); box-shadow:inset 3px 0 0 var(--cian); }
+
+    main { width:100%; max-width:1240px; padding:2rem 2.5rem 3rem; }
+    h1 { font-size:1.75rem; line-height:1.2; margin:0 0 1.25rem; }
+    h2 { font-size:1.3rem; line-height:1.25; margin:1.75rem 0 .75rem; }
+    h2 small { color:var(--texto-suave); font-weight:400; font-size:1rem; }
+    small { color:var(--texto-suave); }
+
     table { border-collapse:collapse; width:100%; }
-    th, td { text-align:left; padding:.5rem; border-bottom:1px solid var(--borde); vertical-align:top; }
-    button, .boton { background:var(--primario); color:#fff; border:0; border-radius:6px; padding:.55rem 1rem; font-size:1rem; cursor:pointer; text-decoration:none; display:inline-block; }
-    button.secundario { background:#e5e9ef; color:#1b1f24; }
-    button.peligro { background:var(--error); }
-    input, select { font-size:1rem; padding:.4rem; border:1px solid var(--borde); border-radius:6px; }
-    label { display:block; margin:.6rem 0 .2rem; font-weight:500; }
-    .error { color:var(--error); }
-    .aviso { background:#fff6e0; border:1px solid #f0c36d; padding:.6rem .8rem; border-radius:6px; margin:.75rem 0; }
-    .insignia { background:#f0c36d; border-radius:999px; padding:.1rem .5rem; font-size:.8rem; }
+    th { text-align:left; color:var(--texto-suave); font-weight:700; font-size:.9rem; padding:.55rem .6rem; border-bottom:1px solid var(--borde); }
+    td { text-align:left; padding:.6rem; border-bottom:1px solid var(--borde); vertical-align:top; }
+    tbody tr:hover td, table tr:hover td { background:rgba(255,255,255,.02); }
+
+    button, .boton { font:inherit; font-weight:700; background:var(--cian); color:#08262e; border:0; border-radius:var(--radio-control);
+      padding:.55rem 1rem; cursor:pointer; text-decoration:none; display:inline-block; }
+    button:hover, .boton:hover { filter:brightness(1.08); }
+    button:disabled { opacity:.4; cursor:not-allowed; filter:none; }
+    button.secundario { background:var(--superficie-alta); color:var(--texto); border:1px solid var(--borde); }
+    button.secundario:hover { border-color:var(--texto-suave); }
+    button.peligro { background:transparent; color:var(--magenta); border:1px solid var(--magenta); }
+    input, select { font:inherit; color:var(--texto); background:var(--fondo); padding:.45rem .6rem;
+      border:1px solid var(--borde); border-radius:var(--radio-control); }
+    input:hover, select:hover { border-color:var(--texto-suave); }
+    input[type=checkbox] { accent-color:var(--cian); width:1rem; height:1rem; }
+    label { display:block; margin:.6rem 0 .25rem; font-weight:700; color:var(--texto-suave); font-size:.9rem; }
+
+    .error { color:var(--magenta); }
+    .aviso { background:var(--amarillo-oscuro); border:1px solid #6b5a26; border-left:4px solid var(--amarillo);
+      padding:.7rem .9rem; border-radius:var(--radio-control); margin:.75rem 0; }
+    .aviso-bloqueo { background:var(--magenta-oscuro); border-color:#6e2c4c; border-left-color:var(--magenta); }
+    .aviso button { margin-left:.5rem; }
+    .insignia { background:var(--amarillo-oscuro); color:var(--amarillo); border-radius:999px; padding:.05rem .55rem; font-size:.8rem; font-weight:700; white-space:nowrap; }
+    .insignia-cian { background:var(--cian-oscuro); color:var(--cian); }
+    .etq-color { color:var(--amarillo); }
     .fila { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
-    .tarjeta { border:1px solid var(--borde); border-radius:8px; padding:1rem; background:var(--suave); }
-    .sugerencia { color:#334155; background:#eef4ff; display:inline-block; padding:.3rem .6rem; border-radius:6px; margin:.5rem 0 0; }
-    .sugerencia:empty { display:none; }
-    .pagina-elegible { display:flex; flex-direction:column; align-items:center; gap:.2rem; cursor:pointer; font-weight:400; margin:0; padding:.3rem; border:2px solid var(--primario); border-radius:6px; background:#fff; }
-    .pagina-elegible img { height:120px; border:1px solid var(--borde); }
-    .pagina-elegible.apagada { border-color:var(--borde); opacity:.45; }
+    .tarjeta { border:1px solid var(--borde); border-radius:var(--radio); padding:1.1rem 1.25rem; background:var(--superficie); }
     .numero { font-variant-numeric:tabular-nums; text-align:right; }
+    .sugerencia { color:var(--cian); background:var(--cian-oscuro); display:inline-block; padding:.3rem .7rem; border-radius:999px; margin:.75rem 0 0; font-size:.9rem; }
+    .sugerencia:empty { display:none; }
+
+    .pagina-elegible { display:flex; flex-direction:column; align-items:center; gap:.3rem; cursor:pointer; color:var(--texto);
+      font-weight:400; margin:0; padding:.35rem; border:2px solid var(--cian); border-radius:var(--radio-control); background:var(--superficie-alta); }
+    .pagina-elegible img { height:120px; border-radius:3px; background:#fff; }
+    .pagina-elegible.apagada { border-color:var(--borde); opacity:.4; }
+
+    /* Pantalla Imprimir: opciones a la izquierda, precio siempre visible a la derecha */
+    .imprimir-rejilla { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:1.5rem; align-items:start; }
+    .panel-precio { position:sticky; top:1.5rem; }
+    .panel-precio .tarjeta { border-top:0; padding-top:1.4rem; position:relative; overflow:hidden; }
+    .panel-precio .tarjeta::before { content:""; position:absolute; inset:0 0 auto 0; height:4px;
+      background:linear-gradient(90deg,var(--cian) 0 25%,var(--magenta) 25% 50%,var(--amarillo) 50% 75%,#e4e8ee 75%); }
+    .total { font-size:2.4rem; font-weight:700; line-height:1.1; font-variant-numeric:tabular-nums; margin:.2rem 0 1rem; }
+    .boton-imprimir { width:100%; font-size:1.1rem; padding:.8rem 1rem; }
+    .miniaturas-precio { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:1rem; }
+    .miniaturas-precio img { height:150px; border-radius:3px; background:#fff; }
+    .zona-subida { display:block; border:2px dashed var(--borde); border-radius:var(--radio); padding:1.4rem; text-align:center;
+      cursor:pointer; font-weight:400; color:var(--texto-suave); margin:0; background:var(--superficie); }
+    .zona-subida:hover, .zona-subida.encima { border-color:var(--cian); color:var(--texto); }
+
+    @media (max-width: 900px) {
+      body { grid-template-columns:1fr; }
+      .lateral { position:static; height:auto; flex-direction:row; flex-wrap:wrap; align-items:center; }
+      .marca { padding:0 .6rem; }
+      .lateral nav { display:flex; flex-wrap:wrap; }
+      main { padding:1.25rem; }
+      .imprimir-rejilla { grid-template-columns:1fr; }
+      .panel-precio { position:static; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
   </style>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  <nav>
-    <a href="/">Imprimir</a>
-    <a href="/perfiles/">Perfiles</a>
-    <a href="/impresoras/">Impresoras</a>
-    <a href="/historial/">Historial</a>
-    <a href="/tarifas/calibracion/">Calibración</a>
-    <a href="/admin/tarifas/">Tarifas</a>
-  </nav>
+  <aside class="lateral">
+    <a class="marca" href="/"><span class="marca-tintas" aria-hidden="true"><i style="background:var(--cian)"></i><i style="background:var(--magenta)"></i><i style="background:var(--amarillo)"></i><i style="background:var(--texto)"></i></span>Printable</a>
+    <nav>
+      {% with r=request.path %}
+      <a href="/"{% if r == "/" %} aria-current="page"{% endif %}>Imprimir</a>
+      <a href="/perfiles/"{% if r|slice:":10" == "/perfiles/" %} aria-current="page"{% endif %}>Perfiles</a>
+      <a href="/impresoras/"{% if r|slice:":12" == "/impresoras/" %} aria-current="page"{% endif %}>Impresoras</a>
+      <a href="/historial/"{% if r == "/historial/" %} aria-current="page"{% endif %}>Historial</a>
+      <a href="/tarifas/calibracion/"{% if r|slice:":21" == "/tarifas/calibracion/" %} aria-current="page"{% endif %}>Calibración</a>
+      <a href="/admin/tarifas/">Tarifas</a>
+      {% endwith %}
+    </nav>
+  </aside>
   <main>
     {% if messages %}{% for m in messages %}<div class="aviso">{{ m }}</div>{% endfor %}{% endif %}
     {% block contenido %}{% endblock %}

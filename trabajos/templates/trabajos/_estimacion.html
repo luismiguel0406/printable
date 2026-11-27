@@ -4,35 +4,40 @@
 </select>
 <input type="hidden" name="perfil_manual" id="id_perfil_manual" value="{% if manual %}1{% else %}0{% endif %}" hx-swap-oob="true">
 {% endif %}
-<p id="motivo" hx-swap-oob="true" class="sugerencia">{% if motivo %}{{ motivo }}{% if manual %} · <small>elegido a mano</small>{% endif %}{% endif %}</p>
+<p id="motivo" hx-swap-oob="true" class="sugerencia">{% if motivo %}{{ motivo }}{% if manual %} (elegido a mano){% endif %}{% endif %}</p>
+<div class="tarjeta">
 {% if error %}
-  <p class="error">{{ error }}</p>
+  <p class="error" style="margin:0">{{ error }}</p>
 {% elif est %}
+  <small>Total a cobrar</small>
+  <div class="total">RD$ {{ est.total }}</div>
+  <small>{{ est.detalles|length }} página{{ est.detalles|length|pluralize }} × {{ est.copias }} copia{{ est.copias|pluralize }}, perfil {{ perfil.nombre }}</small>
   {% if tarifas_en_cero %}<div class="aviso">Las tarifas de esta impresora están en 0, por eso el precio sale RD$ 0. Llénalas en <a href="/admin/tarifas/">Tarifas</a>.</div>{% endif %}
-  <div class="fila" style="align-items:flex-start">
+  <table style="margin:1rem 0">
+    <tr><th>Pág.</th><th class="numero">Papel</th><th class="numero">Tinta</th><th class="numero">Precio</th></tr>
     {% for det, uri, color in miniaturas %}
-      <figure style="margin:0;text-align:center">
-        <img src="{{ uri }}" alt="Página {{ det.numero }}" style="height:180px;border:1px solid var(--borde)">
-        <figcaption><small>Pág. {{ det.numero }} · {% if color is True %}<b style="color:#b45309">Color</b>{% elif color is False %}<span>B/N</span>{% endif %} · RD$ {{ det.precio.precio }}</small></figcaption>
-      </figure>
-    {% endfor %}
-  </div>
-  <table style="margin-top:1rem;max-width:640px">
-    <tr><th>Pág.</th><th class="numero">Papel</th><th class="numero">Tinta</th><th>Cobertura C/M/Y/K</th><th class="numero">Precio</th></tr>
-    {% for det, uri, color in miniaturas %}
-    <tr>
+    <tr title="Cobertura de tinta: cian {% widthratio det.cobertura.c 1 100 %}%, magenta {% widthratio det.cobertura.m 1 100 %}%, amarillo {% widthratio det.cobertura.y 1 100 %}%, negro {% widthratio det.cobertura.k 1 100 %}%">
       <td>{{ det.numero }}</td>
       <td class="numero">{{ det.precio.papel|floatformat:2 }}</td>
       <td class="numero">{{ det.precio.tinta|floatformat:2 }}</td>
-      <td>{% widthratio det.cobertura.c 1 100 %}% / {% widthratio det.cobertura.m 1 100 %}% / {% widthratio det.cobertura.y 1 100 %}% / {% widthratio det.cobertura.k 1 100 %}%</td>
       <td class="numero">{{ det.precio.precio }}</td>
     </tr>
     {% endfor %}
-    <tr><td colspan="4"><b>Total</b> ({{ est.detalles|length }} pág. × {{ est.copias }} cop.)</td><td class="numero"><b>RD$ {{ est.total }}</b></td></tr>
   </table>
-  <form method="post" action="{% url 'trabajos:confirmar' trabajo.pk %}" style="margin-top:1rem"
+  <form method="post" action="{% url 'trabajos:confirmar' trabajo.pk %}"
         onsubmit="this.querySelector('button').disabled=true">{% csrf_token %}
     <input type="hidden" name="huella" value="{{ trabajo.huella }}">
-    <button style="font-size:1.15rem">Imprimir — RD$ {{ est.total }}</button>
+    <button class="boton-imprimir">Imprimir — RD$ {{ est.total }}</button>
   </form>
+{% endif %}
+</div>
+{% if est and not error %}
+<div class="miniaturas-precio">
+  {% for det, uri, color in miniaturas %}
+  <figure style="margin:0;text-align:center">
+    <img src="{{ uri }}" alt="Página {{ det.numero }} tal como se imprimirá">
+    <figcaption><small>Pág. {{ det.numero }}, {% if color is True %}<b class="etq-color">Color</b>{% elif color is False %}<span>B/N</span>{% endif %}, RD$ {{ det.precio.precio }}</small></figcaption>
+  </figure>
+  {% endfor %}
+</div>
 {% endif %}
