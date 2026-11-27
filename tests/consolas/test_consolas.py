@@ -161,3 +161,6 @@ def test_tarjeta_tiene_barra_de_vida_y_datos(client, ps):
 
 def test_libre_muestra_press_start(client, ps):
     assert "PRESS START" in client.get(reverse("consolas:lista")).content.decode()
+
+def test_libre_no_tiene_lineas_de_tv(client, ps):
+    assert "tv-lineas" not in client.get(reverse("consolas:lista")).content.decode()

@@ -2,7 +2,6 @@
 <article class="consola{% if a %} ocupada{% endif %}" data-consola="{{ c.pk }}"
          style="--imagen:url('{% if c.imagen %}{{ c.imagen.url }}{% else %}/static/img/control.svg{% endif %}')">
   <div class="consola-imagen" aria-hidden="true"></div>
-  <div class="tv-lineas" aria-hidden="true"></div>
   <div class="aviso-evento" aria-hidden="true"></div>
   <div class="consola-contenido">
     <h3>{{ c.nombre }}</h3>

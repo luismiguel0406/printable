@@ -134,11 +134,8 @@
     @font-face { font-family:"Press Start 2P"; src:url("/static/fonts/press-start-2p-latin-400-normal.woff2") format("woff2"); font-display:swap; }
     .consola { transition:transform .2s, box-shadow .2s, border-color .2s; }
     .consola:hover { transform:translateY(-3px); border-color:var(--cian); box-shadow:0 0 0 1px var(--cian), 0 0 22px color-mix(in srgb, var(--cian) 55%, transparent); }
-    .consola:not(.ocupada) .consola-imagen { animation:demo-zoom 14s ease-in-out infinite alternate; }
-    @keyframes demo-zoom { from { transform:scale(1); } to { transform:scale(1.12) translate(-2%, -1%); } }
-    .tv-lineas { position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0; background:repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); }
-    .consola:not(.ocupada) .tv-lineas { opacity:1; }
-    .press-start { font-family:"Press Start 2P", monospace; font-size:.7rem; color:#fff; margin-left:.4rem; text-shadow:0 0 6px var(--cian); animation:parpadeo 1.1s steps(2, start) infinite; }
+    .press-start { font-family:"Press Start 2P", monospace; font-size:.7rem; color:#fff; margin-left:.4rem; text-shadow:0 0 6px var(--cian); animation:parpadeo-suave 2.6s ease-in-out infinite; }
+    @keyframes parpadeo-suave { 0%,100% { opacity:1; } 50% { opacity:.15; } }
     .contador { font-family:"Press Start 2P", monospace; font-weight:400; font-size:2.3rem; letter-spacing:.04em; margin:.7rem 0 .5rem;
                 color:#eafffb; text-shadow:0 0 4px var(--cian), 0 0 14px var(--cian), 0 0 28px color-mix(in srgb, var(--cian) 60%, transparent); }
     .consola.ultimos-minutos .contador { color:#fff6d6; text-shadow:0 0 4px var(--amarillo-boton), 0 0 14px var(--amarillo-boton), 0 0 28px var(--amarillo-boton); }
@@ -164,7 +161,7 @@
     @keyframes girar { 50% { transform:scaleX(.15); } }
     @media (prefers-reduced-motion: reduce) {
       .consola, .consola:hover { transform:none; }
-      .consola .consola-imagen, .press-start, .vida .vida-relleno, .consola.terminado .contador, .aviso-evento, .aviso-evento .moneda-icono { animation:none !important; }
+      .press-start, .vida .vida-relleno, .consola.terminado .contador, .aviso-evento, .aviso-evento .moneda-icono { animation:none !important; }
       .aviso-evento.listo, .aviso-evento.moneda { opacity:1; }
     }
     .consola-miniatura { height:140px; border-radius:var(--radio-control); background:var(--imagen) center/cover no-repeat; margin-bottom:.5rem; }
