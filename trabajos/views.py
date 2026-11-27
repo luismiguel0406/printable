@@ -16,6 +16,7 @@ from . import servicios
 from .conversion import ArchivoNoValido
 from .forms import OpcionesForm, SubirForm
 from .models import Bloqueo, Trabajo
+from .resumen import resumen_del_dia
 from .rangos import comprimir_rango, parsear_rango
 
 MAX_PAGINAS_SELECTOR = 60  # más páginas: se usa el campo de texto
@@ -198,7 +199,8 @@ def historial(request):
     return render(
         request,
         "trabajos/historial.html",
-        {"trabajos": Trabajo.objects.all()[:200], "bloqueos": Bloqueo.objects.filter(tipo="bloqueo")[:100]},
+        {"trabajos": Trabajo.objects.all()[:200], "bloqueos": Bloqueo.objects.filter(tipo="bloqueo")[:100],
+         "resumen": resumen_del_dia()},
     )
 
 

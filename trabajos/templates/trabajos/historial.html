@@ -2,6 +2,7 @@
 {% block titulo %}Historial{% endblock %}
 {% block contenido %}
 <h1>Historial</h1>
+{% include "_resumen_dia.html" %}
 <table>
   <tr><th>Fecha</th><th>Origen</th><th>Archivo</th><th>Perfil</th><th>Páginas</th><th class="numero">Total</th><th>Estado</th></tr>
   {% for t in trabajos %}

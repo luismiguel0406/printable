@@ -105,6 +105,12 @@
     .etq-color { color:var(--amarillo); }
     .fila { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
     .tarjeta { border:1px solid var(--borde); border-radius:var(--radio); padding:1.1rem 1.25rem; background:var(--superficie); }
+    .catalogo { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.6rem; margin-top:1rem; }
+    .articulo { display:flex; flex-direction:column; align-items:flex-start; gap:.3rem; text-align:left; font-weight:400;
+      background:var(--superficie); color:var(--texto); border:1px solid var(--borde); padding:.75rem .85rem; }
+    .articulo b { color:var(--cian); }
+    .articulo:hover { border-color:var(--cian); filter:none; }
+    .articulo[hidden] { display:none; }
     .numero { font-variant-numeric:tabular-nums; text-align:right; }
     .sugerencia { color:var(--cian); background:var(--cian-oscuro); display:inline-block; padding:.3rem .7rem; border-radius:999px; margin:.75rem 0 0; font-size:.9rem; }
     .sugerencia:empty { display:none; }
@@ -150,6 +156,7 @@
       <a href="/perfiles/"{% if r|slice:":10" == "/perfiles/" %} aria-current="page"{% endif %}>Perfiles</a>
       <a href="/impresoras/"{% if r|slice:":12" == "/impresoras/" %} aria-current="page"{% endif %}>Impresoras</a>
       <a href="/copias/"{% if r|slice:":8" == "/copias/" %} aria-current="page"{% endif %}>Copias</a>
+      <a href="/papeleria/"{% if r|slice:":11" == "/papeleria/" %} aria-current="page"{% endif %}>Papelería</a>
       <a href="/historial/"{% if r == "/historial/" %} aria-current="page"{% endif %}>Historial</a>
       <a href="/tarifas/calibracion/"{% if r|slice:":21" == "/tarifas/calibracion/" %} aria-current="page"{% endif %}>Calibración</a>
       <a href="/tarifas/"{% if r == "/tarifas/" %} aria-current="page"{% endif %}>Tarifas</a>
