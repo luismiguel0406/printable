@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Consolas{% endblock %}
+{% block contenido %}
+<div class="fila" style="justify-content:space-between;align-items:center">
+  <h1 style="margin:0">Consolas</h1>
+  <div class="fila" style="align-items:center">
+    <button type="button" class="secundario" id="probar-sonido">Probar sonido</button>
+    {% if user.is_superuser %}<a class="boton" style="background:var(--superficie-alta);color:var(--texto);border:1px solid var(--borde)" href="{% url 'consolas:administrar' %}">Consolas y precios</a>{% endif %}
+  </div>
+</div>
+<div class="aviso" id="activar-sonido" hidden>El navegador bloqueó el sonido del final. <button type="button" class="secundario">Activar sonido</button></div>
+
+<div id="tarjetas" class="consolas" hx-get="{% url 'consolas:tarjetas' %}" hx-trigger="every 15s" hx-swap="innerHTML">
+  {% include "consolas/_tarjetas.html" %}
+</div>
+
+<script src="{% static 'js/consolas.js' %}"></script>
+{% endblock %}

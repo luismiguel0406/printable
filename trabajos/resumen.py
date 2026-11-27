@@ -1,4 +1,4 @@
-"""Lo cobrado hoy, por origen. Las consolas se sumarán aquí cuando existan."""
+"""Lo cobrado hoy, por origen."""
 
 from dataclasses import dataclass
 from decimal import Decimal
@@ -12,10 +12,11 @@ class Resumen:
     impresiones: Decimal
     copias: Decimal
     papeleria: Decimal
+    consolas: Decimal
 
     @property
     def total(self) -> Decimal:
-        return self.impresiones + self.copias + self.papeleria
+        return self.impresiones + self.copias + self.papeleria + self.consolas
 
 
 def inicio_de_hoy():
@@ -23,6 +24,7 @@ def inicio_de_hoy():
 
 
 def resumen_del_dia() -> Resumen:
+    from consolas.models import Alquiler
     from papeleria.models import Venta
 
     from .models import Trabajo, VentaCopia
@@ -33,4 +35,5 @@ def resumen_del_dia() -> Resumen:
         impresiones=suma(Trabajo.objects.filter(estado="impreso", enviado_en__gte=hoy)),
         copias=suma(VentaCopia.objects.filter(anulada=False, fecha__gte=hoy)),
         papeleria=suma(Venta.objects.filter(anulada=False, fecha__gte=hoy)),
+        consolas=suma(Alquiler.objects.exclude(estado="cancelado").filter(inicio__gte=hoy)),
     )

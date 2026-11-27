@@ -1,0 +1,30 @@
+{% for t in tarjetas %}{% with c=t.consola a=t.alquiler %}
+<article class="consola{% if a %} ocupada{% endif %}" data-consola="{{ c.pk }}"
+         style="--imagen:url('{% if c.imagen %}{{ c.imagen.url }}{% else %}/static/img/control.svg{% endif %}')">
+  <div class="consola-imagen" aria-hidden="true"></div>
+  <div class="aviso-evento" aria-hidden="true"></div>
+  <div class="consola-contenido">
+    <h3>{{ c.nombre }}</h3>
+    {% if a %}
+      <div class="contador" data-fin="{{ a.fin|date:'c' }}" data-inicio="{{ a.inicio|date:'c' }}" data-alquiler="{{ a.pk }}" data-al-terminar="GAME OVER" role="timer" aria-live="off">--:--</div>
+      <div class="vida" aria-hidden="true"><div class="vida-relleno"></div></div>
+      <p class="consola-detalle">Hasta las {{ a.fin|time:"g:i A" }} · {{ a.minutos }} min · RD$ {{ a.total|floatformat:2 }}</p>
+      <div class="fila consola-botones">
+        <form method="post" action="{% url 'consolas:extender' a.pk %}">{% csrf_token %}<input type="hidden" name="minutos" value="30"><button class="secundario">+30 min</button></form>
+        <form method="post" action="{% url 'consolas:extender' a.pk %}">{% csrf_token %}<input type="hidden" name="minutos" value="60"><button class="secundario">+1 h</button></form>
+        <form method="post" action="{% url 'consolas:terminar' a.pk %}">{% csrf_token %}<button>Terminar</button></form>
+        {% if user.is_superuser %}<form method="post" action="{% url 'consolas:cancelar' a.pk %}" onsubmit="return confirm('¿Cancelar este alquiler? No contará en la caja.')">{% csrf_token %}<button class="peligro">Cancelar</button></form>{% endif %}
+      </div>
+    {% else %}
+      <span class="consola-libre">Libre</span> <span class="press-start" aria-hidden="true">PRESS START</span>
+      <div class="fila consola-botones">
+        {% for minutos, texto, precio in t.opciones %}
+        <form method="post" action="{% url 'consolas:iniciar' c.pk %}">{% csrf_token %}<input type="hidden" name="minutos" value="{{ minutos }}"><button>{{ texto }} · RD$ {{ precio|floatformat:2 }}</button></form>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</article>
+{% endwith %}{% empty %}
+<p>No hay consolas todavía.{% if user.is_superuser %} <a href="{% url 'consolas:administrar' %}">Agrega la primera</a>.{% endif %}</p>
+{% endfor %}
