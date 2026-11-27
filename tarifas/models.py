@@ -77,6 +77,7 @@ class Configuracion(models.Model):
         max_length=10, default="cian",
         choices=[("cian", "Cian"), ("azul", "Azul"), ("violeta", "Violeta"), ("menta", "Menta")],
     )
+    modo = models.CharField(max_length=6, default="oscuro", choices=[("oscuro", "Oscuro"), ("claro", "Claro")])
 
     class Meta:
         verbose_name = "configuración"
