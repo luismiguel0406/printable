@@ -148,6 +148,10 @@ IMPRESORA_BACKEND = os.environ.get(
 DPI_MEDICION = 100
 DPI_IMPRESION = 360
 MONEDA = "RD$"
+IMPRESORAS_VIRTUALES = [
+    "Printable", "Microsoft Print to PDF", "Microsoft XPS Document Writer", "OneNote", "Fax",
+]
+CARPETA_ENTRADA = Path(os.environ.get("PRINTABLE_ENTRADA", r"C:\printable\entrada"))
 FORMAT_MODULE_PATH = ["config.formats"]
 
 # Default primary key field type

@@ -30,13 +30,14 @@ class ControladorFalso:
         self.fallar = False
         self.version = "EPSON L355 Series v3.0"
         self.impresos: list[tuple[str, bytes, list[Image.Image], str]] = []
+        self.impresoras: list[str] = [IMPRESORA]
 
     def _validar(self, impresora: str) -> None:
-        if impresora != IMPRESORA:
+        if impresora not in self.impresoras:
             raise ErrorImpresora(f"No se encontró la impresora «{impresora}»")
 
     def listar_impresoras(self) -> list[str]:
-        return [IMPRESORA]
+        return list(self.impresoras)
 
     def devmode_predeterminado(self, impresora: str) -> bytes:
         self._validar(impresora)
