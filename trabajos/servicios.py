@@ -79,6 +79,42 @@ def crear_trabajo_desde(ruta: "Path", nombre: str, origen: str):
     return trabajo
 
 
+ALTO_MINIATURA_SELECTOR = 160
+
+
+def miniaturas_paginas(trabajo) -> list[str]:
+    """URLs de una miniatura por página (se generan una vez y quedan en media/miniaturas/<id>/)."""
+    from pathlib import Path
+
+    import pymupdf
+
+    carpeta = Path(settings.MEDIA_ROOT) / "miniaturas" / str(trabajo.pk)
+    carpeta.mkdir(parents=True, exist_ok=True)
+    urls = []
+    doc = documento_de(trabajo)
+    pdf = pymupdf.open(doc.ruta) if doc.tipo == "pdf" else None
+    try:
+        for n in range(1, trabajo.total_paginas + 1):
+            archivo = carpeta / f"{n}.png"
+            if not archivo.exists():
+                if pdf is not None:
+                    pagina = pdf[n - 1]
+                    zoom = ALTO_MINIATURA_SELECTOR / pagina.rect.height
+                    pagina.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False).save(archivo)
+                else:
+                    from PIL import ImageOps
+
+                    with Image.open(doc.ruta) as img:
+                        img = ImageOps.exif_transpose(img).convert("RGB")
+                        img.thumbnail((ALTO_MINIATURA_SELECTOR * 2, ALTO_MINIATURA_SELECTOR))
+                        img.save(archivo)
+            urls.append(f"{settings.MEDIA_URL}miniaturas/{trabajo.pk}/{n}.png")
+    finally:
+        if pdf is not None:
+            pdf.close()
+    return urls
+
+
 def tarifas_en_cero(perfil: PerfilImpresion) -> bool:
     """Sin costo de tinta ni de hoja: el precio saldría RD$ 0."""
     t = cargar_tarifas(perfil.impresora)

@@ -31,10 +31,89 @@
   {% endfor %}
 </form>
 <p id="motivo" class="sugerencia">{{ sugerencia.motivo }}</p>
+{% if selector %}
+<div class="tarjeta" style="margin-top:1rem" id="selector">
+  <div class="fila" style="align-items:center;justify-content:space-between">
+    <b>Elige las páginas a imprimir</b>
+    <div class="fila" style="gap:.4rem">
+      <button type="button" class="secundario" data-elegir="todas">Todas</button>
+      <button type="button" class="secundario" data-elegir="ninguna">Ninguna</button>
+      {% if hay_color_y_bn %}
+      <button type="button" class="secundario" data-elegir="color">Solo color</button>
+      <button type="button" class="secundario" data-elegir="bn">Solo B/N</button>
+      {% endif %}
+    </div>
+  </div>
+  <div class="fila" style="max-height:300px;overflow:auto;margin-top:.6rem;align-items:flex-start">
+    {% for n, url, color, marcada in selector %}
+    <label class="pagina-elegible" data-pagina="{{ n }}" data-color="{% if color %}1{% else %}0{% endif %}">
+      <img src="{{ url }}" alt="Página {{ n }}" loading="lazy">
+      <span><input type="checkbox" value="{{ n }}"{% if marcada %} checked{% endif %}> {{ n }}{% if color %} · <b style="color:#b45309">Color</b>{% elif color is False %} · B/N{% endif %}</span>
+    </label>
+    {% endfor %}
+  </div>
+  <p id="sin-paginas" class="error" hidden>Elige al menos una página.</p>
+</div>
+{% elif selector_largo %}
+<p><small>El documento tiene muchas páginas: usa el campo Páginas (por ejemplo 1-10, 15).</small></p>
+{% endif %}
 <div id="estimacion" style="margin-top:1rem"><p>Calculando…</p></div>
 {% endif %}
 
 <script>
+  // Selector visual de páginas: se sincroniza con el campo de texto «Páginas».
+  (function () {
+    const selector = document.getElementById("selector");
+    if (!selector) return;
+    const campo = document.getElementById("id_paginas");
+    const casillas = [...selector.querySelectorAll("input[type=checkbox]")];
+    const total = casillas.length;
+    const comprimir = ns => {
+      const partes = []; let i = 0;
+      while (i < ns.length) {
+        let j = i;
+        while (j + 1 < ns.length && ns[j + 1] === ns[j] + 1) j++;
+        partes.push(i === j ? `${ns[i]}` : `${ns[i]}-${ns[j]}`);
+        i = j + 1;
+      }
+      return partes.join(", ");
+    };
+    const pintar = () => casillas.forEach(c =>
+      c.closest(".pagina-elegible").classList.toggle("apagada", !c.checked));
+    const aplicar = () => {
+      pintar();
+      const elegidas = casillas.filter(c => c.checked).map(c => +c.value);
+      const ninguna = elegidas.length === 0;
+      document.getElementById("sin-paginas").hidden = !ninguna;
+      if (ninguna) {
+        document.querySelectorAll("#estimacion button").forEach(b => b.disabled = true);
+        return;
+      }
+      campo.value = elegidas.length === total ? "" : comprimir(elegidas);
+      htmx.trigger("#opciones", "change");
+    };
+    casillas.forEach(c => c.addEventListener("change", e => { e.stopPropagation(); aplicar(); }));
+    selector.querySelectorAll("[data-elegir]").forEach(b => b.addEventListener("click", () => {
+      const modo = b.dataset.elegir;
+      casillas.forEach(c => {
+        const color = c.closest(".pagina-elegible").dataset.color === "1";
+        c.checked = modo === "todas" || (modo === "color" && color) || (modo === "bn" && !color);
+      });
+      aplicar();
+    }));
+    // Si se escribe el rango a mano, las casillas lo siguen.
+    campo.addEventListener("input", () => {
+      const elegidas = new Set();
+      for (const parte of campo.value.split(",")) {
+        const m = parte.trim().match(/^(\d+)(?:-(\d+))?$/);
+        if (!m) continue;
+        for (let n = +m[1]; n <= +(m[2] || m[1]); n++) elegidas.add(n);
+      }
+      casillas.forEach(c => c.checked = campo.value.trim() === "" || elegidas.has(+c.value));
+      pintar();
+    });
+    pintar();
+  })();
   // Mientras se recalcula, el botón de imprimir viejo no se puede usar.
   document.body.addEventListener("htmx:beforeRequest", () =>
     document.querySelectorAll("#estimacion button").forEach(b => b.disabled = true));
