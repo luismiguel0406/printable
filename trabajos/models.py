@@ -48,3 +48,19 @@ class Trabajo(models.Model):
         actualizado = self.perfil.actualizado.isoformat() if self.perfil else ""
         datos = f"{self.total}|{self.paginas}|{self.copias}|{self.escala}|{self.perfil_id}|{actualizado}"
         return hashlib.sha256(datos.encode()).hexdigest()[:16]
+
+
+class Bloqueo(models.Model):
+    """Trabajo enviado directo a una impresora, cancelado por el sistema."""
+
+    impresora = models.ForeignKey(
+        "impresora.Impresora", null=True, blank=True, on_delete=models.SET_NULL
+    )
+    impresora_nombre = models.CharField(max_length=200)
+    documento = models.CharField(max_length=500)
+    usuario = models.CharField(max_length=200, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    visto = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-fecha"]

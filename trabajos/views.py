@@ -15,7 +15,7 @@ from perfiles.sugerencia import sugerir
 from . import servicios
 from .conversion import ArchivoNoValido
 from .forms import OpcionesForm, SubirForm
-from .models import Trabajo
+from .models import Bloqueo, Trabajo
 from .rangos import parsear_rango
 
 
@@ -167,4 +167,23 @@ def confirmar(request, pk):
 
 
 def historial(request):
-    return render(request, "trabajos/historial.html", {"trabajos": Trabajo.objects.all()[:200]})
+    return render(
+        request,
+        "trabajos/historial.html",
+        {"trabajos": Trabajo.objects.all()[:200], "bloqueos": Bloqueo.objects.all()[:100]},
+    )
+
+
+def bandeja(request):
+    recibidos = Trabajo.objects.filter(origen="capturado", estado="estimado", perfil__isnull=True)
+    return render(
+        request,
+        "trabajos/_bandeja.html",
+        {"recibidos": recibidos[:20], "bloqueos": Bloqueo.objects.filter(visto=False)[:10]},
+    )
+
+
+@require_POST
+def bloqueo_visto(request, pk):
+    Bloqueo.objects.filter(pk=pk).update(visto=True)
+    return bandeja(request)

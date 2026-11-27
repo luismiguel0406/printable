@@ -8,6 +8,8 @@
 <div class="aviso">No hay perfiles todavía. <a href="{% url 'perfiles:nuevo' %}">Crea tu primer perfil</a> para poder imprimir.</div>
 {% endif %}
 
+<div id="bandeja" hx-get="{% url 'trabajos:bandeja' %}" hx-trigger="load, every 3s"></div>
+
 <form method="post" enctype="multipart/form-data" id="subida" class="tarjeta">{% csrf_token %}
   <label for="id_archivo" id="zona" style="border:2px dashed var(--borde);border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;font-weight:400">
     Arrastra aquí una foto, PDF o Word, o haz clic para elegirla

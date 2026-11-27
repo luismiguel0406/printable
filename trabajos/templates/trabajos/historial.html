@@ -1,19 +1,30 @@
 {% extends "base.html" %}
-{% block titulo %}Historial{% endblock %}
+{% block titulo %}Historial
+<h2 style="margin-top:2rem">Impresiones bloqueadas</h2>
+<p>Trabajos enviados directo a una impresora sin pasar por el sistema. Se cancelaron.</p>
+<table>
+  <tr><th>Fecha</th><th>Documento</th><th>Impresora</th><th>Usuario de Windows</th></tr>
+  {% for b in bloqueos %}
+  <tr><td>{{ b.fecha|date:"d/m/Y H:i" }}</td><td>{{ b.documento }}</td><td>{{ b.impresora|default:b.impresora_nombre }}</td><td>{{ b.usuario|default:"—" }}</td></tr>
+  {% empty %}<tr><td colspan="4">Ninguna.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
 {% block contenido %}
 <h1>Historial</h1>
 <table>
-  <tr><th>Fecha</th><th>Archivo</th><th>Perfil</th><th>Páginas</th><th class="numero">Total</th><th>Estado</th></tr>
+  <tr><th>Fecha</th><th>Origen</th><th>Archivo</th><th>Perfil</th><th>Páginas</th><th class="numero">Total</th><th>Estado</th></tr>
   {% for t in trabajos %}
   <tr>
     <td>{{ t.creado|date:"d/m/Y H:i" }}</td>
+    <td>{{ t.get_origen_display }}</td>
     <td>{{ t.nombre_original }}</td>
     <td>{{ t.perfil_nombre|default:"—" }}</td>
     <td>{{ t.paginas|length }} × {{ t.copias }}</td>
     <td class="numero">RD$ {{ t.total }}</td>
     <td>{% if t.estado == "error" %}<span class="error">Error: {{ t.mensaje_error }}</span>{% else %}{{ t.get_estado_display }}{% endif %}</td>
   </tr>
-  {% empty %}<tr><td colspan="6">Todavía no hay trabajos.</td></tr>
+  {% empty %}<tr><td colspan="7">Todavía no hay trabajos.</td></tr>
   {% endfor %}
 </table>
 {% endblock %}

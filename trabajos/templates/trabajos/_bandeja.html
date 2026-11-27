@@ -1,0 +1,17 @@
+{% for b in bloqueos %}
+<div class="aviso" style="border-color:#e8a0a0;background:#fff1f1">
+  Se bloqueó «{{ b.documento }}» enviado directo a {{ b.impresora|default:b.impresora_nombre }}{% if b.usuario %} por {{ b.usuario }}{% endif %} ({{ b.fecha|time:"H:i" }}).
+  Para imprimirlo usa Ctrl+P → <b>Printable</b>.
+  <button class="secundario" hx-post="{% url 'trabajos:bloqueo_visto' b.pk %}" hx-target="#bandeja" style="margin-left:.5rem">Entendido</button>
+</div>
+{% endfor %}
+{% if recibidos %}
+<div class="tarjeta" style="margin-bottom:1rem">
+  <b>Trabajos recibidos (Ctrl+P)</b>
+  <ul style="margin:.4rem 0 0">
+    {% for t in recibidos %}
+    <li><a href="/?trabajo={{ t.pk }}">{{ t.nombre_original }}</a> · {{ t.total_paginas }} pág. · {{ t.creado|time:"H:i" }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

@@ -28,6 +28,13 @@ class CamposDevmode:
     version_driver: int
 
 
+@dataclass(frozen=True)
+class TrabajoCola:
+    id: int
+    documento: str
+    usuario: str
+
+
 class ErrorImpresora(Exception):
     """Falla al hablar con la impresora o su driver. El mensaje es para el usuario."""
 
@@ -42,6 +49,10 @@ class ControladorImpresora(Protocol):
     def info_papel(self, impresora: str, devmode: bytes) -> InfoPapel: ...
 
     def version_driver(self, impresora: str) -> str: ...
+
+    def listar_trabajos(self, impresora: str) -> list[TrabajoCola]: ...
+
+    def cancelar_trabajo(self, impresora: str, id: int) -> None: ...
 
     def imprimir(
         self,
