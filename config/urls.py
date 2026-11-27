@@ -4,10 +4,12 @@ from django.urls import include, path, re_path
 from django.views.static import serve
 
 from . import views
+from .primer_uso import primer_uso
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("tema/", views.tema, name="tema"),
+    path("primer-uso/", primer_uso, name="primer_uso"),
     path("perfiles/", include("perfiles.urls")),
     path("tarifas/", include("tarifas.urls")),
     path("impresoras/", include("impresora.urls")),
