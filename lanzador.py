@@ -52,17 +52,23 @@ def iniciar(abrir: bool) -> None:
         logging.getLogger("printable").exception("No se pudo arrancar")
         _mensaje_error(f"Printable no pudo arrancar:\n\n{e}\n\nRevisa el archivo de registro en la carpeta de datos.")
         raise
-    threading.Thread(target=servir.servir, name="servidor", daemon=True).start()
+    hilo = threading.Thread(target=servir.servir, name="servidor", daemon=True)
+    hilo.start()
     if abrir:
         threading.Timer(1.5, webbrowser.open, args=[servir.URL]).start()
 
-    import pystray
+    try:
+        import pystray
 
-    menu = pystray.Menu(
-        pystray.MenuItem("Abrir Printable", lambda: webbrowser.open(servir.URL), default=True),
-        pystray.MenuItem("Salir", lambda icono: icono.stop()),
-    )
-    pystray.Icon("printable", _icono(), "Printable", menu).run()
+        menu = pystray.Menu(
+            pystray.MenuItem("Abrir Printable", lambda: webbrowser.open(servir.URL), default=True),
+            pystray.MenuItem("Salir", lambda icono: icono.stop()),
+        )
+        pystray.Icon("printable", _icono(), "Printable", menu).run()
+    except Exception:
+        # Sin escritorio (p. ej. un servicio o una sesión remota): el sistema sigue funcionando.
+        logging.getLogger("printable").exception("No se pudo mostrar el ícono; el servidor sigue activo")
+        hilo.join()
 
 
 def main(argv: list[str]) -> int:

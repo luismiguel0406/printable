@@ -1,7 +1,8 @@
 """Pasos de sistema del instalador. Se ejecuta con el Python incluido:
 
   python.exe instalador\\configurar.py datos       crea carpetas y prepara la base
-  python.exe instalador\\configurar.py clawpdf     impresora Printable + autoguardado + predeterminada
+  python.exe instalador\\configurar.py impresora   crea la impresora Printable (como administrador)
+  python.exe instalador\\configurar.py clawpdf     autoguardado + predeterminada (como el usuario)
   python.exe instalador\\configurar.py colas       «iniciar al terminar la cola» en impresoras reales
   python.exe instalador\\configurar.py verificar   muestra el estado en JSON (código 1 si falta algo)
 """
@@ -62,14 +63,19 @@ def _setuphelper() -> Path | None:
     return None
 
 
-def clawpdf() -> None:
-    import winreg
-
+def impresora() -> None:
     if NOMBRE_IMPRESORA not in _impresoras():
         ayudante = _setuphelper()
         if ayudante is None:
             raise SystemExit("No se encontró clawPDF (SetupHelper.exe). ¿Se instaló?")
         subprocess.run([str(ayudante), "/Printer=Add", f"/Name={NOMBRE_IMPRESORA}"], check=True, timeout=120)
+    if NOMBRE_IMPRESORA not in _impresoras():
+        raise SystemExit("clawPDF no creó la impresora Printable")
+    print("Impresora Printable lista")
+
+
+def clawpdf() -> None:
+    import winreg
 
     for sub, valores in valores_registro(carpeta_datos() / "entrada").items():
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, RAIZ_REGISTRO + "\\" + sub) as clave:
@@ -112,7 +118,7 @@ def verificar() -> int:
 
 
 def main(argv: list[str]) -> int:
-    pasos = {"datos": datos, "clawpdf": clawpdf, "colas": colas}
+    pasos = {"datos": datos, "impresora": impresora, "clawpdf": clawpdf, "colas": colas}
     if not argv or argv[0] not in [*pasos, "verificar"]:
         print(__doc__)
         return 2

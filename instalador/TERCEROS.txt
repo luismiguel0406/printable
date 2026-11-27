@@ -1,0 +1,13 @@
+Programas de terceros incluidos en el instalador de Printable
+=============================================================
+
+clawPDF (clawPDF_setup.msi)
+  Impresora virtual PDF. Copyright (C) Andrew Hess // clawSoft.
+  Licencia: GNU Affero General Public License v3 (AGPL-3.0).
+  Se incluye sin modificaciones. Código fuente: https://github.com/clawsoftware/clawPDF
+
+Python (carpeta python)
+  Python Software Foundation License. https://www.python.org/
+
+Atkinson Hyperlegible (static/fonts)
+  SIL Open Font License 1.1. Braille Institute of America.
