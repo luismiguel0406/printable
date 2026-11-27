@@ -39,8 +39,12 @@ Esperar { & $Py "$App\app\instalador\prueba_humo.py" capturados; $LASTEXITCODE -
 Write-Host "El trabajo llegó a la bandeja"
 
 Paso "Actualizar (reinstalar) conserva los datos"
+& $Py "$App\app\instalador\prueba_humo.py" capturados
+Get-ChildItem $Datos -Force | Format-Table Name, Length, LastWriteTime | Out-String | Write-Host
 Stop-Process -Id $Lanzador.Id -Force -ErrorAction SilentlyContinue
+Start-Sleep 2
 Instalar
+Get-ChildItem $Datos -Force | Format-Table Name, Length, LastWriteTime | Out-String | Write-Host
 & $Py "$App\app\instalador\prueba_humo.py" capturados
 if ($LASTEXITCODE -ne 0) { throw "Se perdieron los datos al reinstalar" }
 
