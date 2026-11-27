@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "perfiles",
     "trabajos",
     "papeleria",
+    "consolas",
 ]
 
 MIDDLEWARE = [

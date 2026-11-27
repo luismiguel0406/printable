@@ -19,6 +19,7 @@ urlpatterns = [
     path("tarifas/", include("tarifas.urls")),
     path("impresoras/", include("impresora.urls")),
     path("papeleria/", include("papeleria.urls")),
+    path("consolas/", include("consolas.urls")),
     path("", include("trabajos.urls")),
     # App local de un solo usuario: Django sirve estáticos y archivos subidos.
     re_path(r"^static/(?P<path>.*)$", serve, {"document_root": settings.STATIC_ROOT}),
