@@ -13,7 +13,7 @@ from PIL import Image, ImageWin
 
 from .base import ErrorImpresora, InfoPapel, TrabajoCola, envolver_errores
 from .estado import motivo_bloqueo
-from .devmode import con_copias
+from .devmode import con_copias, texto_version_driver
 
 DM_OUT_BUFFER = 2
 DM_IN_PROMPT = 4
@@ -152,14 +152,16 @@ class ControladorWindows:
         h = win32print.OpenPrinter(impresora)
         try:
             nombre = win32print.GetPrinter(h, 2)["pDriverName"]
-            try:
-                info = win32print.GetPrinterDriver(h, None, 6)
-                version = info.get("DriverVersion", "")
-            except Exception:
-                version = win32print.GetPrinterDriver(h, None, 2).get("Version", "")
-            return f"{nombre} v{version}"
         finally:
             win32print.ClosePrinter(h)
+        drivers: list[dict] = []
+        for nivel in (6, 2):  # el 6 trae DriverVersion; el 2 solo la versión del modelo de driver
+            try:
+                drivers = list(win32print.EnumPrinterDrivers(None, None, nivel))
+                break
+            except Exception:
+                continue
+        return texto_version_driver(nombre, drivers)
 
     @staticmethod
     def _abrir_para_colas(impresora: str):

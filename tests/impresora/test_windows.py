@@ -37,3 +37,9 @@ def test_listar_trabajos_devuelve_lista(controlador):
 
     trabajos = controlador.listar_trabajos(controlador.listar_impresoras()[0])
     assert isinstance(trabajos, list) and all(isinstance(t, TrabajoCola) for t in trabajos)
+
+
+def test_version_driver_no_falla(controlador):
+    for impresora in controlador.listar_impresoras():
+        version = controlador.version_driver(impresora)
+        assert isinstance(version, str) and version

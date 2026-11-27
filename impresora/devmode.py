@@ -48,3 +48,13 @@ def con_copias(raw: bytes, copias: int) -> bytes:
     buf = bytearray(raw)
     struct.pack_into("<h", buf, _OFF_COPIAS, copias)
     return bytes(buf)
+
+
+def texto_version_driver(nombre_driver: str, drivers: list[dict]) -> str:
+    """Nombre del driver + su versión, si Windows la informa (EnumPrinterDrivers nivel 6 o 2)."""
+    for d in drivers:
+        if d.get("Name") == nombre_driver:
+            version = d.get("DriverVersion") or d.get("Version")
+            if version:
+                return f"{nombre_driver} v{version}"
+    return nombre_driver
