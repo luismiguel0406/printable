@@ -73,6 +73,10 @@ class Configuracion(models.Model):
         help_text="El precio se redondea hacia arriba a un múltiplo de este valor",
     )
     moneda = models.CharField(max_length=10, default="RD$")
+    tema = models.CharField(
+        max_length=10, default="cian",
+        choices=[("cian", "Cian"), ("azul", "Azul"), ("violeta", "Violeta"), ("menta", "Menta")],
+    )
 
     class Meta:
         verbose_name = "configuración"

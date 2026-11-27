@@ -11,7 +11,7 @@
   <tr>
     <td><a href="{% url 'perfiles:editar' p.pk %}">{{ p.nombre }}</a>
       {% if p.predeterminado %}<span class="insignia">Predeterminado</span>{% endif %}
-      {% if p.uso_sugerido %}<span class="insignia" style="background:#dbe7ff">{{ p.get_uso_sugerido_display }}</span>{% endif %}
+      {% if p.uso_sugerido %}<span class="insignia insignia-cian">{{ p.get_uso_sugerido_display }}</span>{% endif %}
       {% if p.revisar %}<span class="insignia" title="El driver cambió o la impresora no está disponible">Revisar</span>{% endif %}</td>
     <td>{{ p.impresora }}{% if not p.impresora.activa %} <span class="insignia">Desconectada</span>{% endif %}</td>
     <td>{{ p.tipo_papel }}</td>

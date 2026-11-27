@@ -1,5 +1,5 @@
 {% for b in bloqueos %}
-<div class="aviso" style="border-color:#e8a0a0;background:#fff1f1">
+<div class="aviso aviso-bloqueo">
   {% if b.tipo == "rechazado" %}
   No se pudo leer «{{ b.documento }}», que llegó por Ctrl+P ({{ b.fecha|time:"H:i" }}). Quedó en la carpeta <b>rechazados</b>; intenta imprimirlo otra vez.
   {% else %}

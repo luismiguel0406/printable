@@ -10,9 +10,10 @@
 
 <div id="bandeja" hx-get="{% url 'trabajos:bandeja' %}" hx-trigger="load, every 3s"></div>
 
-<form method="post" enctype="multipart/form-data" id="subida" class="tarjeta">{% csrf_token %}
-  <label for="id_archivo" id="zona" style="border:2px dashed var(--borde);border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;font-weight:400">
-    Arrastra aquí una foto, PDF o Word, o haz clic para elegirla
+<form method="post" enctype="multipart/form-data" id="subida">{% csrf_token %}
+  <label for="id_archivo" id="zona" class="zona-subida">
+    Arrastra aquí una foto, PDF o Word, o haz clic para elegirla.
+    <small style="display:block;margin-top:.25rem">Desde cualquier programa también puedes usar Ctrl+P → Printable.</small>
   </label>
   <input type="file" name="archivo" id="id_archivo" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" hidden
          onchange="this.form.submit()">
@@ -22,7 +23,9 @@
 {% if trabajo and trabajo.estado == "impreso" %}
 <div class="aviso">«{{ trabajo.nombre_original }}» ya se imprimió (RD$ {{ trabajo.total }}). Sube el archivo otra vez para reimprimir.</div>
 {% elif trabajo %}
-<h2 style="margin-top:1.5rem">{{ trabajo.nombre_original }} <small>({{ trabajo.total_paginas }} página{{ trabajo.total_paginas|pluralize }})</small></h2>
+<div class="imprimir-rejilla">
+<div>
+<h2>{{ trabajo.nombre_original }} <small>{{ trabajo.total_paginas }} página{{ trabajo.total_paginas|pluralize }}</small></h2>
 <form id="opciones" class="fila" hx-post="{% url 'trabajos:estimacion' trabajo.pk %}"
       hx-trigger="load, change, keyup changed delay:600ms from:#id_paginas" hx-target="#estimacion">{% csrf_token %}
   {% for campo in opciones.hidden_fields %}{{ campo }}{% endfor %}
@@ -32,7 +35,7 @@
 </form>
 <p id="motivo" class="sugerencia">{{ sugerencia.motivo }}</p>
 {% if selector %}
-<div class="tarjeta" style="margin-top:1rem" id="selector">
+<div class="tarjeta" style="margin-top:1.25rem" id="selector">
   <div class="fila" style="align-items:center;justify-content:space-between">
     <b>Elige las páginas a imprimir</b>
     <div class="fila" style="gap:.4rem">
@@ -48,7 +51,7 @@
     {% for n, url, color, marcada in selector %}
     <label class="pagina-elegible" data-pagina="{{ n }}" data-color="{% if color %}1{% else %}0{% endif %}">
       <img src="{{ url }}" alt="Página {{ n }}" loading="lazy">
-      <span><input type="checkbox" value="{{ n }}"{% if marcada %} checked{% endif %}> {{ n }}{% if color %} · <b style="color:#b45309">Color</b>{% elif color is False %} · B/N{% endif %}</span>
+      <span><input type="checkbox" value="{{ n }}"{% if marcada %} checked{% endif %}> {{ n }}{% if color %} · <b class="etq-color">Color</b>{% elif color is False %} · B/N{% endif %}</span>
     </label>
     {% endfor %}
   </div>
@@ -57,7 +60,11 @@
 {% elif selector_largo %}
 <p><small>El documento tiene muchas páginas: usa el campo Páginas (por ejemplo 1-10, 15).</small></p>
 {% endif %}
-<div id="estimacion" style="margin-top:1rem"><p>Calculando…</p></div>
+</div>
+<aside class="panel-precio" aria-live="polite">
+  <div id="estimacion"><div class="tarjeta"><p>Calculando el precio…</p></div></div>
+</aside>
+</div>
 {% endif %}
 
 <script>
@@ -115,11 +122,14 @@
     pintar();
   })();
   // Mientras se recalcula, el botón de imprimir viejo no se puede usar.
-  document.body.addEventListener("htmx:beforeRequest", () =>
-    document.querySelectorAll("#estimacion button").forEach(b => b.disabled = true));
+  // (Solo cuando se recalcula el precio: el refresco de la bandeja no cuenta.)
+  document.body.addEventListener("htmx:beforeRequest", e => {
+    if (e.detail.elt && e.detail.elt.id === "opciones")
+      document.querySelectorAll("#estimacion button").forEach(b => b.disabled = true);
+  });
   const zona = document.getElementById("zona"), input = document.getElementById("id_archivo");
-  ["dragover", "dragenter"].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.style.background = "#eef4ff"; }));
-  zona.addEventListener("dragleave", () => zona.style.background = "");
+  ["dragover", "dragenter"].forEach(ev => zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.add("encima"); }));
+  zona.addEventListener("dragleave", () => zona.classList.remove("encima"));
   zona.addEventListener("drop", e => {
     e.preventDefault();
     if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; input.form.submit(); }
