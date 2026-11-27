@@ -37,6 +37,12 @@ jobs:
         shell: pwsh
         run: ./instalador/construir.ps1 -Version $env:VERSION
 
+      - name: Guardar el instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrintableSetup-${{ env.VERSION }}
+          path: dist/PrintableSetup-*.exe
+
       - name: Probar la instalación
         shell: pwsh
         run: ./instalador/probar_instalacion.ps1 -Setup "dist/PrintableSetup-$env:VERSION.exe"
@@ -46,10 +52,6 @@ jobs:
         shell: pwsh
         run: Get-Content "$env:ProgramData\Printable\logs\printable.log" -Tail 80 -ErrorAction SilentlyContinue
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: PrintableSetup-${{ env.VERSION }}
-          path: dist/PrintableSetup-*.exe
 
       - name: Publicar versión
         if: github.ref_type == 'tag'

@@ -44,8 +44,8 @@ try {
     Write-Host "Sesión:"; whoami; query session 2>&1 | Write-Host
     Write-Host "Procesos clawPDF:"; Get-Process clawPDF* -ErrorAction SilentlyContinue | Format-Table Id, SessionId, Path | Out-String | Write-Host
     Write-Host "Registro clawPDF:"; reg query "HKCU\Software\clawSoft\clawPDF\Settings" /s 2>&1 | Select-Object -First 80 | Write-Host
-    foreach ($b in @($env:LOCALAPPDATA, $env:APPDATA, $env:TEMP, "C:\Windows\Temp", $env:ProgramData, "C:\Program Files\clawPDF")) {
-        Get-ChildItem $b -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match "claw" -and ($_.Extension -in ".log", ".txt", ".inf", ".ps", ".pdf") } |
+    foreach ($b in @("$env:LOCALAPPDATA\clawSoft", "$env:APPDATA\clawSoft", "$env:TEMP\clawPDF", "C:\Windows\Temp\clawPDF", "C:\Program Files\clawPDF")) {
+        Get-ChildItem $b -Recurse -Depth 3 -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in ".log", ".txt", ".inf", ".ps", ".pdf" } |
             Select-Object -First 30 | ForEach-Object { Write-Host "-- $($_.FullName)"; if ($_.Extension -in ".log", ".txt") { Get-Content $_.FullName -Tail 30 | Write-Host } }
     }
     Write-Host "Archivos PDF recientes:"; Get-ChildItem "$env:USERPROFILE" -Recurse -Filter *.pdf -ErrorAction SilentlyContinue | Where-Object LastWriteTime -gt (Get-Date).AddMinutes(-10) | Select-Object FullName | Out-String | Write-Host
