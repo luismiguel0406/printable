@@ -18,6 +18,9 @@ class TipoPapel(models.Model):
 
 
 class CostoHoja(models.Model):
+    impresora = models.ForeignKey(
+        "impresora.Impresora", on_delete=models.CASCADE, related_name="costos_hoja"
+    )
     tipo_papel = models.ForeignKey(TipoPapel, on_delete=models.CASCADE, related_name="costos")
     tamano = models.CharField("tamaño", max_length=30)
     costo = models.DecimalField("costo por hoja", max_digits=10, decimal_places=2)
@@ -28,7 +31,9 @@ class CostoHoja(models.Model):
         verbose_name_plural = "costos de hoja"
         ordering = ["tipo_papel__nombre", "tamano"]
         constraints = [
-            models.UniqueConstraint(fields=["tipo_papel", "tamano"], name="costo_hoja_unico")
+            models.UniqueConstraint(
+                fields=["impresora", "tipo_papel", "tamano"], name="costo_hoja_unico_por_impresora"
+            )
         ]
 
     def __str__(self):
@@ -36,7 +41,10 @@ class CostoHoja(models.Model):
 
 
 class CostoTinta(models.Model):
-    canal = models.CharField(max_length=1, choices=CANALES, unique=True)
+    impresora = models.ForeignKey(
+        "impresora.Impresora", on_delete=models.CASCADE, related_name="costos_tinta"
+    )
+    canal = models.CharField(max_length=1, choices=CANALES)
     costo_cm2 = models.DecimalField(
         "costo por cm² al 100 %", max_digits=12, decimal_places=8
     )
@@ -46,7 +54,10 @@ class CostoTinta(models.Model):
     class Meta:
         verbose_name = "costo de tinta"
         verbose_name_plural = "costos de tinta"
-        ordering = ["canal"]
+        ordering = ["impresora", "canal"]
+        constraints = [
+            models.UniqueConstraint(fields=["impresora", "canal"], name="costo_tinta_unico_por_impresora")
+        ]
 
     def __str__(self):
         return self.get_canal_display()
@@ -81,6 +92,9 @@ class Configuracion(models.Model):
 
 
 class RecargaTinta(models.Model):
+    impresora = models.ForeignKey(
+        "impresora.Impresora", on_delete=models.CASCADE, related_name="recargas"
+    )
     canal = models.CharField(max_length=1, choices=CANALES)
     fecha = models.DateTimeField()
     precio_botella = models.DecimalField(max_digits=10, decimal_places=2)

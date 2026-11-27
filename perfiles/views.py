@@ -11,7 +11,11 @@ from .models import PerfilImpresion
 
 
 def lista(request):
-    perfiles = list(PerfilImpresion.objects.select_related("tipo_papel"))
+    perfiles = list(
+        PerfilImpresion.objects.select_related("tipo_papel", "impresora").order_by(
+            "impresora__nombre_windows", "-predeterminado", "nombre"
+        )
+    )
     for p in perfiles:
         p.revisar = p.requiere_revision()
     return render(request, "perfiles/lista.html", {"perfiles": perfiles})
@@ -25,6 +29,8 @@ def nuevo(request):
             perfil = servicios.crear_perfil(
                 d["nombre"], d["impresora"], d["tipo_papel"], d["factor_calidad"]
             )
+            perfil.uso_sugerido = d.get("uso_sugerido", "")
+            perfil.save(update_fields=["uso_sugerido"])
         except ErrorImpresora as e:
             form.add_error(None, str(e))
         else:

@@ -33,7 +33,11 @@ def sincronizar_impresoras() -> list[Impresora]:
 
 
 def _al_crear(imp: Impresora) -> None:
-    """Gancho para preparar una impresora nueva (tarifas, etc.)."""
+    """Una impresora real nueva recibe sus tarifas en cero para que Luis las llene."""
+    if not imp.virtual:
+        from tarifas.servicios import crear_tarifas_para
+
+        crear_tarifas_para(imp)
 
 
 @transaction.atomic

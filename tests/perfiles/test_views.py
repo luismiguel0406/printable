@@ -6,15 +6,25 @@ from tarifas.models import TipoPapel
 IMP = "EPSON L355 Series"
 
 
-def test_nuevo_perfil_toma_devmode_predeterminado(client, db, controlador_falso):
+def test_nuevo_perfil_toma_devmode_predeterminado(client, db, controlador_falso, epson):
     glossy = TipoPapel.objects.get(nombre="Glossy")
     r = client.post(
         reverse("perfiles:nuevo"),
-        {"nombre": "Foto glossy", "impresora": IMP, "tipo_papel": glossy.pk, "factor_calidad": "1.3"},
+        {"nombre": "Foto glossy", "impresora": epson.pk, "tipo_papel": glossy.pk, "factor_calidad": "1.3",
+         "uso_sugerido": "color"},
     )
     p = PerfilImpresion.objects.get(nombre="Foto glossy")
     assert bytes(p.devmode) == controlador_falso.devmode_predeterminado(IMP)
     assert r.status_code == 302 and r.url == reverse("perfiles:editar", args=[p.pk])
+    assert p.impresora == epson and p.uso_sugerido == "color"
+
+
+def test_uso_sugerido_repetido_muestra_error(client, crear_perfil):
+    crear_perfil("Color A", uso="color")
+    p = crear_perfil("Color B")
+    r = client.post(reverse("perfiles:editar", args=[p.pk]),
+                    {"nombre": "Color B", "tipo_papel": p.tipo_papel_id, "factor_calidad": "1", "uso_sugerido": "color"})
+    assert r.status_code == 200 and "ya es el perfil para color" in r.content.decode()
 
 
 def test_preferencias_guarda_cambios(client, perfil, controlador_falso):

@@ -9,7 +9,14 @@ CALIDADES = {-1: "Borrador", -2: "Baja", -3: "Media", -4: "Alta"}
 
 class PerfilImpresion(models.Model):
     nombre = models.CharField(max_length=80, unique=True)
-    impresora = models.CharField(max_length=200)
+    impresora = models.ForeignKey(
+        "impresora.Impresora", on_delete=models.PROTECT, related_name="perfiles"
+    )
+    uso_sugerido = models.CharField(
+        "uso sugerido", max_length=5, blank=True, default="",
+        choices=[("", "—"), ("color", "Para color"), ("bn", "Para B/N")],
+        help_text="El sistema lo sugiere según el documento tenga color o no",
+    )
     devmode = models.BinaryField()
     version_driver = models.CharField(max_length=200, blank=True)
     tamano = models.CharField("tamaño", max_length=30)
@@ -35,6 +42,12 @@ class PerfilImpresion(models.Model):
         verbose_name = "perfil de impresión"
         verbose_name_plural = "perfiles de impresión"
         ordering = ["-predeterminado", "nombre"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["impresora", "uso_sugerido"], condition=~models.Q(uso_sugerido=""),
+                name="un_uso_sugerido_por_impresora",
+            )
+        ]
 
     def __str__(self):
         return self.nombre
@@ -60,6 +73,9 @@ class PerfilImpresion(models.Model):
         from impresora.base import ErrorImpresora
 
         try:
-            return obtener_controlador().version_driver(self.impresora) != self.version_driver
+            return (
+                obtener_controlador().version_driver(self.impresora.nombre_windows)
+                != self.version_driver
+            )
         except ErrorImpresora:
             return True

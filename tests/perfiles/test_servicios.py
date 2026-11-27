@@ -40,5 +40,5 @@ def test_requiere_revision(perfil, controlador_falso):
 
 
 def test_requiere_revision_si_impresora_no_existe(perfil):
-    perfil.impresora = "Otra"
+    perfil.impresora.nombre_windows = "Otra"
     assert perfil.requiere_revision()

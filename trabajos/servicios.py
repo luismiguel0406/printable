@@ -39,7 +39,7 @@ def _miniatura(img: Image.Image) -> Image.Image:
 def estimar(
     doc: Documento, perfil: PerfilImpresion, paginas: list[int], copias: int, escala: Escala
 ) -> Estimacion:
-    tarifas = cargar_tarifas()
+    tarifas = cargar_tarifas(perfil.impresora)
     area = perfil.area_cm2()
     detalles = []
     imagenes = rasterizar(doc, perfil.info_papel(), escala, settings.DPI_MEDICION, paginas)
@@ -62,6 +62,7 @@ def documento_de(trabajo) -> Documento:
 def guardar_estimacion(trabajo, est: Estimacion, perfil: PerfilImpresion, paginas, escala) -> None:
     trabajo.perfil = perfil
     trabajo.perfil_nombre = perfil.nombre
+    trabajo.impresora = perfil.impresora
     trabajo.escala = escala
     trabajo.paginas = paginas
     trabajo.copias = est.copias
@@ -92,7 +93,7 @@ def imprimir_trabajo(trabajo):
 
     try:
         obtener_controlador().imprimir(
-            perfil.impresora, bytes(perfil.devmode), paginas(), trabajo.nombre_original
+            perfil.impresora.nombre_windows, bytes(perfil.devmode), paginas(), trabajo.nombre_original
         )
     except ErrorImpresora as e:
         # El intento fallido queda como registro propio en el historial; el trabajo

@@ -31,10 +31,14 @@ def crear_perfil(db, controlador_falso):
     from perfiles.models import PerfilImpresion
     from tarifas.models import TipoPapel
 
-    def crear(nombre="Perfil", papel="Bond", ancho_mm=215.9, alto_mm=279.4, color=True, factor="1.00"):
+    def crear(nombre="Perfil", papel="Bond", ancho_mm=215.9, alto_mm=279.4, color=True, factor="1.00",
+              impresora=None, uso=""):
+        from impresora.models import Impresora
+
         p = PerfilImpresion(
             nombre=nombre,
-            impresora="EPSON L355 Series",
+            impresora=impresora or Impresora.objects.get(nombre_windows="EPSON L355 Series"),
+            uso_sugerido=uso,
             tipo_papel=TipoPapel.objects.get(nombre=papel),
             factor_calidad=Decimal(factor),
         )
@@ -63,3 +67,26 @@ def perfil_glossy_4x6(crear_perfil):
 @pytest.fixture
 def perfil_bn_carta(crear_perfil):
     return crear_perfil("B/N Carta", "Bond", 215.9, 279.4, False)
+
+
+@pytest.fixture
+def epson(db):
+    from impresora.models import Impresora
+
+    return Impresora.objects.get(nombre_windows="EPSON L355 Series")
+
+
+@pytest.fixture
+def hp(db, controlador_falso):
+    from impresora.models import Impresora
+    from tarifas.servicios import crear_tarifas_para
+
+    controlador_falso.impresoras.append("HP DeskJet 2700")
+    imp = Impresora.objects.create(nombre_windows="HP DeskJet 2700", alias="HP emergencia")
+    crear_tarifas_para(imp)
+    return imp
+
+
+@pytest.fixture
+def perfil_hp(crear_perfil, hp):
+    return crear_perfil("HP Carta", "Bond", impresora=hp)

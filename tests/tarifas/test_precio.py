@@ -38,8 +38,8 @@ def test_falta_costo_hoja():
         precio_pagina(Cobertura(0, 0, 0, 0), D("1"), "Bond", "Carta", D("1"), T)
 
 
-def test_cargar_tarifas(db):
-    t = cargar_tarifas()
+def test_cargar_tarifas(db, epson):
+    t = cargar_tarifas(epson)
     assert set(t.costo_cm2) == {"C", "M", "Y", "K"}
     assert ("Glossy", "4x6") in t.costo_hoja
     assert t.margen == D("0.50") and t.redondeo == D("1.00")
