@@ -14,7 +14,7 @@ function Instalar {
     if (Select-String -Path instalacion.log -Pattern "Pasos con error" -Quiet) { throw "Algún paso del instalador falló (ver arriba)" }
 }
 function Esperar([scriptblock]$Condicion, [int]$Segundos, [string]$Que) {
-    for ($i = 0; $i -lt $Segundos; $i++) { if (& $Condicion) { return }; Start-Sleep 1 }
+    for ($i = 0; $i -lt $Segundos; $i++) { if ((& $Condicion) -eq $true) { return }; Start-Sleep 1 }
     throw "Tiempo agotado esperando: $Que"
 }
 function Responde {
@@ -35,8 +35,17 @@ Write-Host "El servidor responde"
 Paso "Ctrl+P hacia Printable"
 & $Py "$App\app\instalador\prueba_humo.py" usuario
 "Prueba de Printable desde el Bloc de notas" | Out-Printer -Name "Printable"
-Esperar { & $Py "$App\app\instalador\prueba_humo.py" capturados; $LASTEXITCODE -eq 0 } 120 "que el PDF llegue como trabajo recibido"
+try {
+    Esperar { & $Py "$App\app\instalador\prueba_humo.py" capturados | Out-Host; $LASTEXITCODE -eq 0 } 120 "que el PDF llegue como trabajo recibido"
+} catch {
+    Write-Host "Contenido de la carpeta de entrada:"; Get-ChildItem "$Datos\entrada" -Recurse | Out-String | Write-Host
+    Write-Host "Cola de Printable:"; Get-PrintJob -PrinterName "Printable" -ErrorAction SilentlyContinue | Out-String | Write-Host
+    Write-Host "Archivos PDF recientes:"; Get-ChildItem "$env:USERPROFILE" -Recurse -Filter *.pdf -ErrorAction SilentlyContinue | Where-Object LastWriteTime -gt (Get-Date).AddMinutes(-10) | Select-Object FullName | Out-String | Write-Host
+    Get-ChildItem "$env:ProgramData\Printable\logs" -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName -Tail 40 } | Write-Host
+    throw
+}
 Write-Host "El trabajo llegó a la bandeja"
+Get-ChildItem "$Datos\entrada" -Recurse | Format-Table FullName, Length | Out-String | Write-Host
 
 Paso "Actualizar (reinstalar) conserva los datos"
 & $Py "$App\app\instalador\prueba_humo.py" capturados
