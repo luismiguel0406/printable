@@ -8,10 +8,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from impresora.models import Impresora
 from perfiles.models import PerfilImpresion
+from perfiles.sugerencia import sugerir
 
 from . import servicios
-from .conversion import ArchivoNoValido, normalizar
+from .conversion import ArchivoNoValido
 from .forms import OpcionesForm, SubirForm
 from .models import Trabajo
 from .rangos import parsear_rango
@@ -29,19 +31,13 @@ def _guardar_subida(archivo) -> Trabajo:
         raise ArchivoNoValido(f"Tipo de archivo no soportado: {ext or 'sin extensión'}")
     if archivo.size > settings.TAMANO_MAXIMO_ARCHIVO:
         raise ArchivoNoValido("El archivo es demasiado grande (máximo 50 MB)")
-    trabajo = Trabajo(nombre_original=archivo.name[:255])
-    trabajo.archivo.save(archivo.name, archivo, save=False)
-    ruta = Path(trabajo.archivo.path)
+    temporal = Trabajo()
+    temporal.archivo.save(archivo.name, archivo, save=False)
     try:
-        doc = normalizar(ruta, ruta.parent / f"{ruta.stem}_pdf")
+        return servicios.crear_trabajo_desde(Path(temporal.archivo.path), archivo.name, "subido")
     except ArchivoNoValido:
-        trabajo.archivo.delete(save=False)
+        temporal.archivo.delete(save=False)
         raise
-    trabajo.ruta_normalizada = str(doc.ruta)
-    trabajo.tipo_documento = doc.tipo
-    trabajo.total_paginas = doc.paginas
-    trabajo.save()
-    return trabajo
 
 
 def imprimir(request):
@@ -59,14 +55,23 @@ def imprimir(request):
     opciones = None
     if request.GET.get("trabajo", "").isdigit():
         trabajo = Trabajo.objects.filter(pk=request.GET["trabajo"]).first()
+    sugerencia = None
     if trabajo and trabajo.estado != "impreso":
-        predeterminado = PerfilImpresion.objects.filter(predeterminado=True).first()
+        impresora = trabajo.impresora if trabajo.impresora and trabajo.impresora.activa else None
+        paginas = trabajo.paginas or list(range(1, trabajo.total_paginas + 1))
+        sugerencia = sugerir(trabajo.paginas_color, paginas, impresora)
+        manual = trabajo.perfil is not None and trabajo.perfil.impresora_id == getattr(
+            sugerencia.impresora, "pk", None
+        )
         opciones = OpcionesForm(
+            impresora=sugerencia.impresora,
             initial={
-                "perfil": trabajo.perfil or predeterminado or PerfilImpresion.objects.first(),
+                "impresora": sugerencia.impresora,
+                "perfil": trabajo.perfil if manual else sugerencia.perfil,
+                "perfil_manual": "1" if manual else "0",
                 "copias": trabajo.copias,
                 "escala": trabajo.escala,
-            }
+            },
         )
     return render(
         request,
@@ -75,7 +80,9 @@ def imprimir(request):
             "subir": subir,
             "trabajo": trabajo,
             "opciones": opciones,
+            "sugerencia": sugerencia,
             "hay_perfiles": PerfilImpresion.objects.exists(),
+            "hay_impresoras": Impresora.disponibles().exists(),
         },
     )
 
@@ -84,7 +91,7 @@ def imprimir(request):
 def estimacion(request, pk):
     trabajo = get_object_or_404(Trabajo, pk=pk)
     form = OpcionesForm(request.POST)
-    ctx = {"trabajo": trabajo, "error": None, "est": None}
+    ctx = {"trabajo": trabajo, "error": None, "est": None, "perfiles": None}
     if trabajo.estado == "impreso":
         ctx["error"] = "Este trabajo ya se imprimió. Sube el archivo otra vez para reimprimir."
         return render(request, "trabajos/_estimacion.html", ctx)
@@ -92,10 +99,29 @@ def estimacion(request, pk):
         ctx["error"] = " ".join(e for errs in form.errors.values() for e in errs)
         return render(request, "trabajos/_estimacion.html", ctx)
     d = form.cleaned_data
+    impresora, perfil = d["impresora"], d["perfil"]
+    ctx["perfiles"] = PerfilImpresion.objects.filter(impresora=impresora)
     try:
         paginas = parsear_rango(d["paginas"], trabajo.total_paginas)
+    except ValueError as e:
+        ctx["error"] = str(e)
+        return render(request, "trabajos/_estimacion.html", ctx)
+    sugerencia = sugerir(trabajo.paginas_color, paginas, impresora)
+    ctx["motivo"] = sugerencia.motivo
+    if d["perfil_manual"] == "1" and perfil is not None:
+        if perfil.impresora_id != impresora.pk:
+            ctx["error"] = "El perfil no es de esta impresora. Elige uno de la lista."
+            return render(request, "trabajos/_estimacion.html", ctx)
+        ctx["manual"] = True
+    else:
+        perfil = sugerencia.perfil
+    ctx["perfil"] = perfil
+    if perfil is None:
+        ctx["error"] = f"{impresora} no tiene perfiles. Crea uno en Perfiles."
+        return render(request, "trabajos/_estimacion.html", ctx)
+    try:
         est = servicios.estimar(
-            servicios.documento_de(trabajo), d["perfil"], paginas, d["copias"], d["escala"]
+            servicios.documento_de(trabajo), perfil, paginas, d["copias"], d["escala"]
         )
     except ValueError as e:
         ctx["error"] = str(e)
@@ -104,9 +130,14 @@ def estimacion(request, pk):
     except Exception:  # archivo ilegible, sin memoria, etc.
         ctx["error"] = "No se pudo leer el archivo. Vuelve a subirlo."
     else:
-        servicios.guardar_estimacion(trabajo, est, d["perfil"], paginas, d["escala"])
+        servicios.guardar_estimacion(trabajo, est, perfil, paginas, d["escala"])
         ctx["est"] = est
-        ctx["miniaturas"] = [(det, _data_uri(det.miniatura)) for det in est.detalles]
+        colores = trabajo.paginas_color
+        ctx["miniaturas"] = [
+            (det, _data_uri(det.miniatura),
+             colores[det.numero - 1] if det.numero <= len(colores) else None)
+            for det in est.detalles
+        ]
     return render(request, "trabajos/_estimacion.html", ctx)
 
 

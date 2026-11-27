@@ -2,7 +2,9 @@
 {% block titulo %}Imprimir{% endblock %}
 {% block contenido %}
 <h1>Imprimir</h1>
-{% if not hay_perfiles %}
+{% if not hay_impresoras %}
+<div class="aviso">No hay impresoras disponibles. Revisa la pantalla <a href="/impresoras/">Impresoras</a>.</div>
+{% elif not hay_perfiles %}
 <div class="aviso">No hay perfiles todavía. <a href="{% url 'perfiles:nuevo' %}">Crea tu primer perfil</a> para poder imprimir.</div>
 {% endif %}
 
@@ -21,10 +23,12 @@
 <h2 style="margin-top:1.5rem">{{ trabajo.nombre_original }} <small>({{ trabajo.total_paginas }} página{{ trabajo.total_paginas|pluralize }})</small></h2>
 <form id="opciones" class="fila" hx-post="{% url 'trabajos:estimacion' trabajo.pk %}"
       hx-trigger="load, change, keyup changed delay:600ms from:#id_paginas" hx-target="#estimacion">{% csrf_token %}
-  {% for campo in opciones %}
+  {% for campo in opciones.hidden_fields %}{{ campo }}{% endfor %}
+  {% for campo in opciones.visible_fields %}
     <div><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}</div>
   {% endfor %}
 </form>
+<p id="motivo" class="sugerencia">{{ sugerencia.motivo }}</p>
 <div id="estimacion" style="margin-top:1rem"><p>Calculando…</p></div>
 {% endif %}
 

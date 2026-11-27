@@ -27,7 +27,8 @@ def subir(client, nombre, contenido):
 
 def estimar(client, t, perfil, copias=1, paginas=""):
     return client.post(reverse("trabajos:estimacion", args=[t.pk]),
-                       {"perfil": perfil.pk, "copias": copias, "paginas": paginas, "escala": "ajustar"})
+                       {"impresora": perfil.impresora_id, "perfil": perfil.pk, "perfil_manual": "1",
+                        "copias": copias, "paginas": paginas, "escala": "ajustar"})
 
 
 def confirmar(client, t):

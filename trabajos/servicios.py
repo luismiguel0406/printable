@@ -53,6 +53,32 @@ def estimar(
     return Estimacion(detalles, copias, total)
 
 
+def crear_trabajo_desde(ruta: "Path", nombre: str, origen: str):
+    """Crea un Trabajo con un archivo que ya está dentro de MEDIA_ROOT.
+
+    Normaliza, cuenta páginas y clasifica B/N o color. Lanza ArchivoNoValido.
+    """
+    from pathlib import Path
+
+    from .color import paginas_con_color
+    from .conversion import normalizar
+    from .models import Trabajo
+
+    ruta = Path(ruta)
+    doc = normalizar(ruta, ruta.parent / f"{ruta.stem}_pdf")
+    try:
+        colores = paginas_con_color(doc)
+    except Exception:  # la clasificación es una ayuda: no debe impedir imprimir
+        colores = []
+    trabajo = Trabajo(
+        nombre_original=nombre[:255], origen=origen, ruta_normalizada=str(doc.ruta),
+        tipo_documento=doc.tipo, total_paginas=doc.paginas, paginas_color=colores,
+    )
+    trabajo.archivo.name = str(ruta.relative_to(Path(settings.MEDIA_ROOT))).replace("\\", "/")
+    trabajo.save()
+    return trabajo
+
+
 def documento_de(trabajo) -> Documento:
     from pathlib import Path
 
@@ -93,7 +119,8 @@ def imprimir_trabajo(trabajo):
 
     try:
         obtener_controlador().imprimir(
-            perfil.impresora.nombre_windows, bytes(perfil.devmode), paginas(), trabajo.nombre_original
+            perfil.impresora.nombre_windows, bytes(perfil.devmode), paginas(),
+            f"Printable#{trabajo.pk} {trabajo.nombre_original}",
         )
     except ErrorImpresora as e:
         # El intento fallido queda como registro propio en el historial; el trabajo

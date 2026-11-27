@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Impresoras{% endblock %}
+{% block contenido %}
+<div class="fila" style="justify-content:space-between">
+  <h1>Impresoras</h1>
+  <form method="post" action="{% url 'impresora:buscar' %}">{% csrf_token %}<button class="secundario">Buscar impresoras</button></form>
+</div>
+<p>Las impresoras <b>controladas</b> solo imprimen lo que sale del sistema: lo que se mande directo se cancela.</p>
+<table>
+  <tr><th>Impresora</th><th>Nombre corto</th><th>Estado</th><th>Controlada</th><th></th></tr>
+  {% for i in impresoras %}
+  <tr>
+    <td>{{ i.nombre_windows }}
+      {% if i.predeterminada %}<span class="insignia">Predeterminada</span>{% endif %}
+      {% if i.virtual %}<span class="insignia" style="background:#dbe7ff">Virtual</span>{% endif %}</td>
+    <td colspan="3">
+      <form method="post" action="{% url 'impresora:guardar' i.pk %}" class="fila" style="align-items:center">{% csrf_token %}
+        <input name="alias" value="{{ i.alias }}" placeholder="Ej. Epson fotos" style="width:12rem">
+        <span style="width:7rem">{% if i.activa %}Conectada{% else %}<span class="error">Desconectada</span>{% endif %}</span>
+        {% if i.virtual %}<span style="width:5rem">—</span>{% else %}
+        <label style="margin:0;font-weight:400"><input type="checkbox" name="controlada"{% if i.controlada %} checked{% endif %}> Sí</label>{% endif %}
+        <button class="secundario">Guardar</button>
+      </form>
+    </td>
+    <td>{% if not i.virtual and not i.predeterminada and i.activa %}
+      <form method="post" action="{% url 'impresora:predeterminada' i.pk %}">{% csrf_token %}<button class="secundario">Predeterminada</button></form>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
