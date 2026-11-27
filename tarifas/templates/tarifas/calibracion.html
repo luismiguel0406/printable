@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Calibración{% endblock %}
+{% block contenido %}
+<h1>Calibración de tinta</h1>
+<p>Cada vez que rellenes un tanque, registra la recarga. Con dos recargas del mismo color el sistema
+sabe cuánta tinta usaste en lo impreso entre ambas y sugiere un costo real por cm².</p>
+<form method="post" action="{% url 'tarifas:recarga' %}" class="fila tarjeta">{% csrf_token %}
+  <div><label for="canal">Color</label>
+    <select name="canal" id="canal">{% for c, n in canales %}<option value="{{ c }}">{{ n }}</option>{% endfor %}</select></div>
+  <div><label for="precio">Precio de la botella (RD$)</label><input name="precio_botella" id="precio" type="number" step="0.01" min="0"></div>
+  <div><button>Registrar recarga</button></div>
+</form>
+<table style="margin-top:1rem">
+  <tr><th>Color</th><th>Última recarga</th><th class="numero">Costo actual / cm²</th><th class="numero">Sugerido / cm²</th><th></th></tr>
+  {% for f in filas %}
+  <tr>
+    <td>{{ f.nombre }}</td>
+    <td>{% if f.ultima %}{{ f.ultima.fecha|date:"d/m/Y" }} (RD$ {{ f.ultima.precio_botella }}){% else %}—{% endif %}</td>
+    <td class="numero">{{ f.actual|default:"—" }}</td>
+    <td class="numero">{% if f.sugerido is not None %}{{ f.sugerido }}{% else %}<small>faltan datos</small>{% endif %}</td>
+    <td>{% if f.sugerido is not None %}<form method="post" action="{% url 'tarifas:aplicar' f.canal %}">{% csrf_token %}<button class="secundario">Aplicar</button></form>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

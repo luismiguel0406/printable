@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Perfiles{% endblock %}
+{% block contenido %}
+<div class="fila" style="justify-content:space-between">
+  <h1>Perfiles de impresión</h1>
+  <a class="boton" href="{% url 'perfiles:nuevo' %}">Nuevo perfil</a>
+</div>
+<table>
+  <tr><th>Nombre</th><th>Papel</th><th>Tamaño</th><th>Color</th><th>Calidad</th><th></th></tr>
+  {% for p in perfiles %}
+  <tr>
+    <td><a href="{% url 'perfiles:editar' p.pk %}">{{ p.nombre }}</a>
+      {% if p.predeterminado %}<span class="insignia">Predeterminado</span>{% endif %}
+      {% if p.revisar %}<span class="insignia" title="El driver cambió o la impresora no está disponible">Revisar</span>{% endif %}</td>
+    <td>{{ p.tipo_papel }}</td>
+    <td>{{ p.tamano }}</td>
+    <td>{{ p.color|yesno:"Color,B/N" }}</td>
+    <td>{{ p.calidad_texto }}</td>
+    <td class="fila">
+      {% if not p.predeterminado %}
+      <form method="post" action="{% url 'perfiles:predeterminado' p.pk %}">{% csrf_token %}<button class="secundario">Predeterminado</button></form>
+      {% endif %}
+      <form method="post" action="{% url 'perfiles:duplicar' p.pk %}">{% csrf_token %}<button class="secundario">Duplicar</button></form>
+      <form method="post" action="{% url 'perfiles:eliminar' p.pk %}" onsubmit="return confirm('¿Eliminar el perfil {{ p.nombre|escapejs }}?')">{% csrf_token %}<button class="peligro">Eliminar</button></form>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6">Todavía no hay perfiles. Crea uno para empezar a imprimir.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

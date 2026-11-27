@@ -1,0 +1,9 @@
+.superpowers/
+__pycache__/
+*.pyc
+db.sqlite3
+media/
+staticfiles/
+.venv/
+spike_perfil.bin
+.clave_secreta
