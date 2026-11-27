@@ -19,5 +19,5 @@ def test_reconocer(w, h, esperado):
 
 
 def test_tamanos_conocidos():
-    assert TAMANOS["Oficio"] == (215.9, 355.6)
+    assert TAMANOS["Legal"] == (215.9, 355.6)
     assert TAMANOS["8x10"] == (203.2, 254)

@@ -17,6 +17,20 @@ class TipoPapel(models.Model):
         return self.nombre
 
 
+class TamanoPapel(models.Model):
+    nombre = models.CharField(max_length=30, unique=True)
+    ancho_mm = models.FloatField("ancho (mm)")
+    alto_mm = models.FloatField("alto (mm)")
+
+    class Meta:
+        verbose_name = "tamaño de papel"
+        verbose_name_plural = "tamaños de papel"
+        ordering = ["ancho_mm", "alto_mm"]
+
+    def __str__(self):
+        return self.nombre
+
+
 class CostoHoja(models.Model):
     impresora = models.ForeignKey(
         "impresora.Impresora", on_delete=models.CASCADE, related_name="costos_hoja"

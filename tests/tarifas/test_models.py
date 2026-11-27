@@ -21,7 +21,7 @@ def test_costo_hoja_unico_por_papel_y_tamano(db):
 
 def test_datos_iniciales(db):
     nombres = set(TipoPapel.objects.values_list("nombre", flat=True))
-    assert nombres >= {"Bond", "Glossy", "Mate", "Cartulina"}
+    assert nombres >= {"Bond", "Glossy", "Glossy adhesivo"}
     assert CostoTinta.objects.count() == 4
     k = CostoTinta.objects.get(canal="K")
     esperado = (
