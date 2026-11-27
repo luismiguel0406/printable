@@ -22,10 +22,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+# Instalado: los datos viven fuera del programa (p. ej. C:\ProgramData\Printable).
+# En desarrollo y pruebas no se define y todo queda en la carpeta del proyecto.
+DATOS_DIR = Path(os.environ["PRINTABLE_DATOS"]) if os.environ.get("PRINTABLE_DATOS") else BASE_DIR
+DATOS_DIR.mkdir(parents=True, exist_ok=True)
+
+
 def _clave_secreta() -> str:
     if os.environ.get("DJANGO_SECRET_KEY"):
         return os.environ["DJANGO_SECRET_KEY"]
-    archivo = BASE_DIR / ".clave_secreta"
+    archivo = DATOS_DIR / ".clave_secreta"
     if not archivo.exists():
         from django.core.management.utils import get_random_secret_key
 
@@ -93,7 +99,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": DATOS_DIR / "db.sqlite3",
         # El vigilante escribe mientras el servidor atiende: WAL + espera larga evitan "database is locked".
         "OPTIONS": {
             "timeout": 20,
@@ -141,7 +147,7 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = DATOS_DIR / "media"
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
@@ -158,7 +164,29 @@ LOGIN_URL = "/admin/login/"
 IMPRESORAS_VIRTUALES = [
     "Printable", "Microsoft Print to PDF", "Microsoft XPS Document Writer", "OneNote", "Fax",
 ]
-CARPETA_ENTRADA = Path(os.environ.get("PRINTABLE_ENTRADA", r"C:\printable\entrada"))
+CARPETA_ENTRADA = Path(
+    os.environ.get("PRINTABLE_ENTRADA")
+    or (DATOS_DIR / "entrada" if os.environ.get("PRINTABLE_DATOS") else r"C:\printable\entrada")
+)
+
+if os.environ.get("PRINTABLE_DATOS"):
+    (DATOS_DIR / "logs").mkdir(exist_ok=True)
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {"simple": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"}},
+        "handlers": {
+            "archivo": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": str(DATOS_DIR / "logs" / "printable.log"),
+                "maxBytes": 1_000_000,
+                "backupCount": 5,
+                "encoding": "utf-8",
+                "formatter": "simple",
+            }
+        },
+        "root": {"handlers": ["archivo"], "level": "INFO"},
+    }
 FORMAT_MODULE_PATH = ["config.formats"]
 
 # Default primary key field type
