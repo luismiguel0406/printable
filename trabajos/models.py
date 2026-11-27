@@ -71,3 +71,29 @@ class Bloqueo(models.Model):
 
     class Meta:
         ordering = ["-fecha"]
+
+
+class VentaCopia(models.Model):
+    """Copias hechas con el botón de la impresora (no pasan por la PC)."""
+
+    impresora = models.ForeignKey("impresora.Impresora", null=True, on_delete=models.SET_NULL)
+    tipo = models.CharField(max_length=5, choices=[("bn", "B/N"), ("color", "Color")])
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.DecimalField(max_digits=8, decimal_places=2)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    anulada = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha"]
+
+
+class LecturaContador(models.Model):
+    """Número total de páginas según la hoja de informe de la impresora."""
+
+    impresora = models.ForeignKey("impresora.Impresora", on_delete=models.CASCADE)
+    fecha = models.DateTimeField()
+    total_paginas = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ["-fecha"]
