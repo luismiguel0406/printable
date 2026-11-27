@@ -143,3 +143,21 @@ def test_resumen_incluye_consolas(client, ps):
 
 def test_menu_tiene_consolas(client, db):
     assert 'href="/consolas/"' in client.get("/historial/").content.decode()
+
+
+def test_iniciar_y_extender_avisan_al_navegador(client, ps):
+    r = iniciar(client, ps, 30)
+    a = Alquiler.objects.get()
+    assert r.url == f"/consolas/?evento=inicio&alquiler={a.pk}"
+    r = client.post(reverse("consolas:extender", args=[a.pk]), {"minutos": 30})
+    assert r.url == f"/consolas/?evento=extender&alquiler={a.pk}&minutos=30"
+
+
+def test_tarjeta_tiene_barra_de_vida_y_datos(client, ps):
+    iniciar(client, ps, 60)
+    html = client.get(reverse("consolas:lista")).content.decode()
+    assert 'class="vida"' in html and 'data-inicio="' in html and "GAME OVER" in html
+
+
+def test_libre_muestra_press_start(client, ps):
+    assert "PRESS START" in client.get(reverse("consolas:lista")).content.decode()
