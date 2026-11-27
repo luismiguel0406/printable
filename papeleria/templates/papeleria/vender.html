@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block titulo %}Papelería{% endblock %}
+{% block contenido %}
+<div class="fila" style="justify-content:space-between;align-items:center">
+  <h1 style="margin:0">Papelería</h1>
+  {% if user.is_superuser %}<a class="boton" style="background:var(--superficie-alta);color:var(--texto);border:1px solid var(--borde)" href="{% url 'papeleria:articulos' %}">Artículos y precios</a>{% endif %}
+</div>
+{% if error %}<div class="aviso aviso-bloqueo">{{ error }}</div>{% endif %}
+
+<div class="imprimir-rejilla" style="margin-top:1rem">
+  <div>
+    <input type="search" id="buscar" placeholder="Buscar artículo…  (Enter agrega el primero)" aria-label="Buscar artículo"
+           autocomplete="off" style="width:100%;font-size:1.1rem;padding:.65rem .8rem" autofocus>
+    <div id="catalogo" class="catalogo">
+      {% for a in articulos %}
+      <button type="button" class="articulo" data-id="{{ a.pk }}" data-nombre="{{ a.nombre }}" data-precio="{{ a.precio|stringformat:'s' }}">
+        <span>{{ a.nombre }}</span><b>RD$ {{ a.precio|floatformat:2 }}</b>
+      </button>
+      {% empty %}
+      <p>No hay artículos todavía.{% if user.is_superuser %} <a href="{% url 'papeleria:articulos' %}">Agrega el primero</a>.{% endif %}</p>
+      {% endfor %}
+    </div>
+    <p id="sin-resultados" hidden><small>Ningún artículo coincide.</small></p>
+  </div>
+
+  <aside class="panel-precio">
+    <form method="post" class="tarjeta" id="venta">{% csrf_token %}
+      <small>Venta en curso</small>
+      <table id="lineas" style="margin:.5rem 0 .75rem;font-size:.95rem"></table>
+      <p id="vacia" style="margin:.5rem 0"><small>Toca un artículo para agregarlo.</small></p>
+      <div class="total" id="total">RD$ 0.00</div>
+      <button class="boton-imprimir" id="cobrar" disabled>Cobrar</button>
+      <button type="button" class="secundario" id="limpiar" style="width:100%;margin-top:.5rem">Vaciar</button>
+    </form>
+  </aside>
+</div>
+
+<div style="margin-top:1.5rem">{% include "_resumen_dia.html" %}</div>
+
+<h2>Ventas de hoy <small>RD$ {{ total_hoy|floatformat:2 }}</small></h2>
+<table>
+  <tr><th>Hora</th><th>Artículos</th><th class="numero">Total</th><th></th></tr>
+  {% for v in ventas %}
+  <tr{% if v.anulada %} style="opacity:.45"{% endif %}>
+    <td>{{ v.fecha|time:"H:i" }}</td>
+    <td>{% for l in v.lineas.all %}{{ l.cantidad }} × {{ l.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+    <td class="numero">{% if v.anulada %}Anulada{% else %}RD$ {{ v.total|floatformat:2 }}{% endif %}</td>
+    <td>{% if user.is_superuser and not v.anulada %}<form method="post" action="{% url 'papeleria:anular' v.pk %}" onsubmit="return confirm('¿Anular esta venta de RD$ {{ v.total|floatformat:2 }}?')">{% csrf_token %}<button class="peligro" style="padding:.2rem .6rem">Anular</button></form>{% endif %}</td>
+  </tr>
+  {% empty %}<tr><td colspan="4">Todavía no hay ventas hoy.</td></tr>
+  {% endfor %}
+</table>
+
+<script>
+(function () {
+  const venta = new Map(); // id -> {nombre, precio, cantidad}
+  const lineas = document.getElementById("lineas"), totalEl = document.getElementById("total");
+  const cobrar = document.getElementById("cobrar"), vacia = document.getElementById("vacia");
+  const buscar = document.getElementById("buscar"), botones = [...document.querySelectorAll(".articulo")];
+  const dinero = n => "RD$ " + n.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const esc = t => t.replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+  function pintar() {
+    lineas.innerHTML = "";
+    let total = 0;
+    for (const [id, l] of venta) {
+      total += l.precio * l.cantidad;
+      const fila = document.createElement("tr");
+      fila.innerHTML = `<td>${esc(l.nombre)}</td>
+        <td><input type="number" name="articulo_${id}" value="${l.cantidad}" min="1" max="999" style="width:4.2rem" aria-label="Cantidad de ${esc(l.nombre)}"></td>
+        <td class="numero">${dinero(l.precio * l.cantidad)}</td>
+        <td><button type="button" class="secundario" style="padding:.1rem .45rem" aria-label="Quitar ${esc(l.nombre)}">✕</button></td>`;
+      fila.querySelector("input").addEventListener("change", e => {
+        const n = Math.max(1, Math.min(999, parseInt(e.target.value) || 1));
+        l.cantidad = n; pintar();
+      });
+      fila.querySelector("button").addEventListener("click", () => { venta.delete(id); pintar(); });
+      lineas.appendChild(fila);
+    }
+    totalEl.textContent = dinero(total);
+    cobrar.disabled = venta.size === 0;
+    vacia.hidden = venta.size > 0;
+  }
+  function agregar(b) {
+    const id = b.dataset.id, l = venta.get(id);
+    if (l) l.cantidad = Math.min(999, l.cantidad + 1);
+    else venta.set(id, {nombre: b.dataset.nombre, precio: parseFloat(b.dataset.precio), cantidad: 1});
+    pintar();
+  }
+  botones.forEach(b => b.addEventListener("click", () => agregar(b)));
+  buscar.addEventListener("input", () => {
+    const q = buscar.value.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+    let visibles = 0;
+    botones.forEach(b => {
+      const t = b.dataset.nombre.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+      b.hidden = q && !t.includes(q); if (!b.hidden) visibles++;
+    });
+    document.getElementById("sin-resultados").hidden = visibles > 0 || !botones.length;
+  });
+  buscar.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const primero = botones.find(b => !b.hidden);
+    if (primero) { agregar(primero); buscar.value = ""; buscar.dispatchEvent(new Event("input")); }
+  });
+  document.getElementById("limpiar").addEventListener("click", () => { venta.clear(); pintar(); buscar.focus(); });
+  document.getElementById("venta").addEventListener("submit", () => { cobrar.disabled = true; });
+  pintar();
+})();
+</script>
+{% endblock %}

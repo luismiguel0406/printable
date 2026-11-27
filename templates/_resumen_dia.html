@@ -1,0 +1,9 @@
+<div class="tarjeta resumen-dia">
+  <h2 style="margin:0 0 .5rem">Hoy en caja <small>RD$ {{ resumen.total|floatformat:2 }}</small></h2>
+  <div class="fila" style="gap:1.5rem">
+    <div><small>Impresiones</small><div class="numero" style="text-align:left;font-weight:700">RD$ {{ resumen.impresiones|floatformat:2 }}</div></div>
+    <div><small>Copias</small><div class="numero" style="text-align:left;font-weight:700">RD$ {{ resumen.copias|floatformat:2 }}</div></div>
+    <div><small>Papelería</small><div class="numero" style="text-align:left;font-weight:700">RD$ {{ resumen.papeleria|floatformat:2 }}</div></div>
+    <div><small>Consolas</small><div class="numero" style="text-align:left;font-weight:700">RD$ {{ resumen.consolas|floatformat:2 }}</div></div>
+  </div>
+</div>
