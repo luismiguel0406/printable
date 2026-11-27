@@ -10,9 +10,10 @@ from .models import PerfilImpresion
 def aplicar_devmode(perfil: PerfilImpresion, devmode: bytes) -> None:
     ctrl = obtener_controlador()
     campos = leer_campos(devmode)
-    info = ctrl.info_papel(perfil.impresora, devmode)
+    nombre = perfil.impresora.nombre_windows
+    info = ctrl.info_papel(nombre, devmode)
     perfil.devmode = devmode
-    perfil.version_driver = ctrl.version_driver(perfil.impresora)
+    perfil.version_driver = ctrl.version_driver(nombre)
     perfil.tamano = reconocer(info.ancho_mm, info.alto_mm)
     perfil.ancho_mm = info.ancho_mm
     perfil.alto_mm = info.alto_mm
@@ -30,12 +31,14 @@ def crear_perfil(nombre, impresora, tipo_papel, factor_calidad) -> PerfilImpresi
     perfil = PerfilImpresion(
         nombre=nombre, impresora=impresora, tipo_papel=tipo_papel, factor_calidad=factor_calidad
     )
-    aplicar_devmode(perfil, obtener_controlador().devmode_predeterminado(impresora))
+    aplicar_devmode(perfil, obtener_controlador().devmode_predeterminado(impresora.nombre_windows))
     return perfil
 
 
 def configurar_en_driver(perfil: PerfilImpresion) -> bool:
-    nuevo = obtener_controlador().abrir_preferencias(perfil.impresora, bytes(perfil.devmode))
+    nuevo = obtener_controlador().abrir_preferencias(
+        perfil.impresora.nombre_windows, bytes(perfil.devmode)
+    )
     if nuevo is None:
         return False
     aplicar_devmode(perfil, nuevo)
@@ -47,6 +50,7 @@ def duplicar(perfil: PerfilImpresion, nombre: str) -> PerfilImpresion:
     copia.pk = None
     copia.nombre = nombre
     copia.predeterminado = False
+    copia.uso_sugerido = ""
     copia.save()
     return copia
 

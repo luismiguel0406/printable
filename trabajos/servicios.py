@@ -39,7 +39,7 @@ def _miniatura(img: Image.Image) -> Image.Image:
 def estimar(
     doc: Documento, perfil: PerfilImpresion, paginas: list[int], copias: int, escala: Escala
 ) -> Estimacion:
-    tarifas = cargar_tarifas()
+    tarifas = cargar_tarifas(perfil.impresora)
     area = perfil.area_cm2()
     detalles = []
     imagenes = rasterizar(doc, perfil.info_papel(), escala, settings.DPI_MEDICION, paginas)
@@ -53,6 +53,39 @@ def estimar(
     return Estimacion(detalles, copias, total)
 
 
+def crear_trabajo_desde(ruta: "Path", nombre: str, origen: str):
+    """Crea un Trabajo con un archivo que ya está dentro de MEDIA_ROOT.
+
+    Normaliza, cuenta páginas y clasifica B/N o color. Lanza ArchivoNoValido.
+    """
+    from pathlib import Path
+
+    from .color import paginas_con_color
+    from .conversion import normalizar
+    from .models import Trabajo
+
+    ruta = Path(ruta)
+    doc = normalizar(ruta, ruta.parent / f"{ruta.stem}_pdf")
+    try:
+        colores = paginas_con_color(doc)
+    except Exception:  # la clasificación es una ayuda: no debe impedir imprimir
+        colores = []
+    trabajo = Trabajo(
+        nombre_original=nombre[:255], origen=origen, ruta_normalizada=str(doc.ruta),
+        tipo_documento=doc.tipo, total_paginas=doc.paginas, paginas_color=colores,
+    )
+    trabajo.archivo.name = str(ruta.relative_to(Path(settings.MEDIA_ROOT))).replace("\\", "/")
+    trabajo.save()
+    return trabajo
+
+
+def tarifas_en_cero(perfil: PerfilImpresion) -> bool:
+    """Sin costo de tinta ni de hoja: el precio saldría RD$ 0."""
+    t = cargar_tarifas(perfil.impresora)
+    costo, minimo = t.costo_hoja.get((perfil.tipo_papel.nombre, perfil.tamano), (0, 0))
+    return not any(t.costo_cm2.values()) and not costo and not minimo
+
+
 def documento_de(trabajo) -> Documento:
     from pathlib import Path
 
@@ -62,6 +95,7 @@ def documento_de(trabajo) -> Documento:
 def guardar_estimacion(trabajo, est: Estimacion, perfil: PerfilImpresion, paginas, escala) -> None:
     trabajo.perfil = perfil
     trabajo.perfil_nombre = perfil.nombre
+    trabajo.impresora = perfil.impresora
     trabajo.escala = escala
     trabajo.paginas = paginas
     trabajo.copias = est.copias
@@ -83,6 +117,11 @@ def imprimir_trabajo(trabajo):
     if perfil is None:
         raise ValueError("El perfil de este trabajo ya no existe. Elige otro y vuelve a calcular.")
     doc = documento_de(trabajo)
+    # El vigilante solo deja pasar trabajos enviados hace poco (ver vigilancia.es_del_sistema).
+    from django.utils import timezone
+
+    trabajo.enviado_en = timezone.now()
+    trabajo.save(update_fields=["enviado_en"])
 
     def paginas():
         for _ in range(trabajo.copias):
@@ -92,7 +131,8 @@ def imprimir_trabajo(trabajo):
 
     try:
         obtener_controlador().imprimir(
-            perfil.impresora, bytes(perfil.devmode), paginas(), trabajo.nombre_original
+            perfil.impresora.nombre_windows, bytes(perfil.devmode), paginas(),
+            f"Printable#{trabajo.pk} {trabajo.nombre_original}",
         )
     except ErrorImpresora as e:
         # El intento fallido queda como registro propio en el historial; el trabajo

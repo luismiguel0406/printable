@@ -21,7 +21,8 @@ def subir(client, nombre, contenido):
 def estimar(client, trabajo, perfil, copias=1, paginas="", escala="ajustar"):
     return client.post(
         reverse("trabajos:estimacion", args=[trabajo.pk]),
-        {"perfil": perfil.pk, "copias": copias, "paginas": paginas, "escala": escala},
+        {"impresora": perfil.impresora_id, "perfil": perfil.pk, "perfil_manual": "1",
+         "copias": copias, "paginas": paginas, "escala": escala},
     )
 
 
@@ -94,7 +95,7 @@ def test_sin_tarifa_muestra_error(client, trabajo_cuatro_paginas, crear_perfil):
 def test_imprimir_envia_paginas_por_copias(client, trabajo_estimado_2_copias, controlador_falso):
     confirmar(client, trabajo_estimado_2_copias)
     impresora, devmode, paginas, nombre = controlador_falso.impresos[0]
-    assert len(paginas) == 2 and nombre == "una.pdf"
+    assert len(paginas) == 2 and nombre == f"Printable#{trabajo_estimado_2_copias.pk} una.pdf"
     assert Trabajo.objects.get().estado == "impreso"
 
 

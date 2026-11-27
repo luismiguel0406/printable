@@ -30,3 +30,10 @@ def test_info_papel_es_coherente(controlador):
     info = controlador.info_papel(impresora, controlador.devmode_predeterminado(impresora))
     assert 0 < info.imprimible_ancho_mm <= info.ancho_mm
     assert 0 < info.imprimible_alto_mm <= info.alto_mm
+
+
+def test_listar_trabajos_devuelve_lista(controlador):
+    from impresora.base import TrabajoCola
+
+    trabajos = controlador.listar_trabajos(controlador.listar_impresoras()[0])
+    assert isinstance(trabajos, list) and all(isinstance(t, TrabajoCola) for t in trabajos)

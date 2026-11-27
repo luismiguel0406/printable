@@ -14,6 +14,15 @@ def main() -> None:
 
     call_command("migrate", interactive=False, verbosity=0)
     call_command("collectstatic", interactive=False, verbosity=0)
+
+    from django.conf import settings
+
+    from impresora.servicios import sincronizar_impresoras
+    from trabajos.vigilancia import Vigilante
+
+    sincronizar_impresoras()
+    Vigilante(settings.CARPETA_ENTRADA).iniciar()
+    print(f"Vigilando la carpeta {settings.CARPETA_ENTRADA} y las colas de impresión")
     print("Sistema de impresión en http://127.0.0.1:8000  (Ctrl+C para detener)")
     serve(get_wsgi_application(), host="127.0.0.1", port=8000, threads=4)
 

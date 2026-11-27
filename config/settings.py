@@ -93,6 +93,11 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+        # El vigilante escribe mientras el servidor atiende: WAL + espera larga evitan "database is locked".
+        "OPTIONS": {
+            "timeout": 20,
+            "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
+        },
     }
 }
 
@@ -148,6 +153,11 @@ IMPRESORA_BACKEND = os.environ.get(
 DPI_MEDICION = 100
 DPI_IMPRESION = 360
 MONEDA = "RD$"
+LOGIN_URL = "/admin/login/"
+IMPRESORAS_VIRTUALES = [
+    "Printable", "Microsoft Print to PDF", "Microsoft XPS Document Writer", "OneNote", "Fax",
+]
+CARPETA_ENTRADA = Path(os.environ.get("PRINTABLE_ENTRADA", r"C:\printable\entrada"))
 FORMAT_MODULE_PATH = ["config.formats"]
 
 # Default primary key field type

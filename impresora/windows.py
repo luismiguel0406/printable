@@ -11,7 +11,7 @@ from typing import Iterable
 import win32print
 from PIL import Image, ImageWin
 
-from .base import ErrorImpresora, InfoPapel, envolver_errores
+from .base import ErrorImpresora, InfoPapel, TrabajoCola, envolver_errores
 from .estado import motivo_bloqueo
 from .devmode import con_copias
 
@@ -162,13 +162,44 @@ class ControladorWindows:
             win32print.ClosePrinter(h)
 
     @staticmethod
-    def _verificar_disponible(impresora: str) -> None:
+    def _abrir_para_colas(impresora: str):
+        """Con permiso de administración si se puede (cancelar trabajos de otros usuarios)."""
+        try:
+            return win32print.OpenPrinter(impresora, {"DesiredAccess": win32print.PRINTER_ALL_ACCESS})
+        except Exception:
+            return win32print.OpenPrinter(impresora, {"DesiredAccess": win32print.PRINTER_ACCESS_USE})
+
+    @envolver_errores
+    def listar_trabajos(self, impresora: str) -> list[TrabajoCola]:
+        h = self._abrir_para_colas(impresora)
+        try:
+            trabajos = win32print.EnumJobs(h, 0, 999, 1)
+        finally:
+            win32print.ClosePrinter(h)
+        return [
+            TrabajoCola(int(t["JobId"]), t.get("pDocument") or "", t.get("pUserName") or "")
+            for t in trabajos
+        ]
+
+    @envolver_errores
+    def cancelar_trabajo(self, impresora: str, id: int) -> None:
+        h = self._abrir_para_colas(impresora)
+        try:
+            win32print.SetJob(h, id, 0, None, win32print.JOB_CONTROL_DELETE)
+        finally:
+            win32print.ClosePrinter(h)
+
+    @envolver_errores
+    def estado(self, impresora: str) -> str | None:
         h = win32print.OpenPrinter(impresora)
         try:
             info = win32print.GetPrinter(h, 2)
         finally:
             win32print.ClosePrinter(h)
-        motivo = motivo_bloqueo(info.get("Attributes", 0), info.get("Status", 0))
+        return motivo_bloqueo(info.get("Attributes", 0), info.get("Status", 0))
+
+    def _verificar_disponible(self, impresora: str) -> None:
+        motivo = self.estado(impresora)
         if motivo:
             raise ErrorImpresora(motivo)
 

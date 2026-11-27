@@ -24,15 +24,15 @@ class PrecioPagina:
     precio: Decimal
 
 
-def cargar_tarifas() -> Tarifas:
+def cargar_tarifas(impresora) -> Tarifas:
     from .models import Configuracion, CostoHoja, CostoTinta
 
     conf = Configuracion.obtener()
     return Tarifas(
-        costo_cm2={t.canal: t.costo_cm2 for t in CostoTinta.objects.all()},
+        costo_cm2={t.canal: t.costo_cm2 for t in CostoTinta.objects.filter(impresora=impresora)},
         costo_hoja={
             (h.tipo_papel.nombre, h.tamano): (h.costo, h.precio_minimo)
-            for h in CostoHoja.objects.select_related("tipo_papel")
+            for h in CostoHoja.objects.filter(impresora=impresora).select_related("tipo_papel")
         },
         margen=conf.margen,
         redondeo=conf.redondeo,
@@ -57,7 +57,8 @@ def precio_pagina(
         papel, minimo = t.costo_hoja[(tipo_papel, tamano)]
     except KeyError:
         raise KeyError(
-            f"No hay tarifa para papel {tipo_papel} en tamaño {tamano}. Agrégala en Tarifas."
+            f"No hay tarifa para papel {tipo_papel} en tamaño {tamano} en esta impresora. "
+            "Agrégala en Tarifas."
         ) from None
     cobertura = {"C": cob.c, "M": cob.m, "Y": cob.y, "K": cob.k}
     tinta = sum(

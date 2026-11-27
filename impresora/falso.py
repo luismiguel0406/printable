@@ -5,7 +5,7 @@ from typing import Iterable
 
 from PIL import Image
 
-from .base import ErrorImpresora, InfoPapel
+from .base import ErrorImpresora, InfoPapel, TrabajoCola
 from .devmode import _OFF_CALIDAD, leer_campos
 
 IMPRESORA = "EPSON L355 Series"
@@ -30,13 +30,18 @@ class ControladorFalso:
         self.fallar = False
         self.version = "EPSON L355 Series v3.0"
         self.impresos: list[tuple[str, bytes, list[Image.Image], str]] = []
+        self.impresoras: list[str] = [IMPRESORA]
+        self.colas: dict[str, list[TrabajoCola]] = {}
+        self.sin_conexion: set[str] = set()
+        self.cancelados: list[tuple[str, int]] = []
+        self._siguiente_id = 1
 
     def _validar(self, impresora: str) -> None:
-        if impresora != IMPRESORA:
+        if impresora not in self.impresoras:
             raise ErrorImpresora(f"No se encontró la impresora «{impresora}»")
 
     def listar_impresoras(self) -> list[str]:
-        return [IMPRESORA]
+        return list(self.impresoras)
 
     def devmode_predeterminado(self, impresora: str) -> bytes:
         self._validar(impresora)
@@ -75,6 +80,26 @@ class ControladorFalso:
             raise ErrorImpresora("Impresora desconectada")
         self._validar(impresora)
         self.impresos.append((impresora, devmode, list(paginas), nombre_documento))
+
+
+    def estado(self, impresora: str) -> str | None:
+        self._validar(impresora)
+        return "La impresora está apagada o desconectada" if impresora in self.sin_conexion else None
+
+    def encolar(self, impresora: str, documento: str, usuario: str = "cliente") -> int:
+        trabajo = TrabajoCola(self._siguiente_id, documento, usuario)
+        self._siguiente_id += 1
+        self.colas.setdefault(impresora, []).append(trabajo)
+        return trabajo.id
+
+    def listar_trabajos(self, impresora: str) -> list[TrabajoCola]:
+        self._validar(impresora)
+        return list(self.colas.get(impresora, []))
+
+    def cancelar_trabajo(self, impresora: str, id: int) -> None:
+        self._validar(impresora)
+        self.colas[impresora] = [t for t in self.colas.get(impresora, []) if t.id != id]
+        self.cancelados.append((impresora, id))
 
 
 _instancia: ControladorFalso | None = None

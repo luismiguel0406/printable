@@ -1,17 +1,25 @@
+{% if perfiles is not None %}
+<select name="perfil" id="id_perfil" hx-swap-oob="true" onchange="document.getElementById('id_perfil_manual').value='1'">
+  {% for p in perfiles %}<option value="{{ p.pk }}"{% if p == perfil %} selected{% endif %}>{{ p.nombre }}</option>{% empty %}<option value="">(sin perfiles)</option>{% endfor %}
+</select>
+<input type="hidden" name="perfil_manual" id="id_perfil_manual" value="{% if manual %}1{% else %}0{% endif %}" hx-swap-oob="true">
+{% endif %}
+<p id="motivo" hx-swap-oob="true" class="sugerencia">{% if motivo %}{{ motivo }}{% if manual %} · <small>elegido a mano</small>{% endif %}{% endif %}</p>
 {% if error %}
   <p class="error">{{ error }}</p>
 {% elif est %}
+  {% if tarifas_en_cero %}<div class="aviso">Las tarifas de esta impresora están en 0, por eso el precio sale RD$ 0. Llénalas en <a href="/admin/tarifas/">Tarifas</a>.</div>{% endif %}
   <div class="fila" style="align-items:flex-start">
-    {% for det, uri in miniaturas %}
+    {% for det, uri, color in miniaturas %}
       <figure style="margin:0;text-align:center">
         <img src="{{ uri }}" alt="Página {{ det.numero }}" style="height:180px;border:1px solid var(--borde)">
-        <figcaption><small>Pág. {{ det.numero }} · RD$ {{ det.precio.precio }}</small></figcaption>
+        <figcaption><small>Pág. {{ det.numero }} · {% if color is True %}<b style="color:#b45309">Color</b>{% elif color is False %}<span>B/N</span>{% endif %} · RD$ {{ det.precio.precio }}</small></figcaption>
       </figure>
     {% endfor %}
   </div>
   <table style="margin-top:1rem;max-width:640px">
     <tr><th>Pág.</th><th class="numero">Papel</th><th class="numero">Tinta</th><th>Cobertura C/M/Y/K</th><th class="numero">Precio</th></tr>
-    {% for det, uri in miniaturas %}
+    {% for det, uri, color in miniaturas %}
     <tr>
       <td>{{ det.numero }}</td>
       <td class="numero">{{ det.precio.papel|floatformat:2 }}</td>

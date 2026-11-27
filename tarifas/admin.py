@@ -15,14 +15,15 @@ class TipoPapelAdmin(admin.ModelAdmin):
 
 @admin.register(CostoHoja)
 class CostoHojaAdmin(admin.ModelAdmin):
-    list_display = ["tipo_papel", "tamano", "costo", "precio_minimo"]
+    list_display = ["impresora", "tipo_papel", "tamano", "costo", "precio_minimo"]
     list_editable = ["costo", "precio_minimo"]
-    list_filter = ["tipo_papel"]
+    list_filter = ["impresora", "tipo_papel"]
 
 
 @admin.register(CostoTinta)
 class CostoTintaAdmin(admin.ModelAdmin):
-    list_display = ["canal", "costo_cm2", "precio_botella", "rendimiento_paginas"]
+    list_display = ["impresora", "canal", "costo_cm2", "precio_botella", "rendimiento_paginas"]
+    list_filter = ["impresora"]
 
 
 @admin.register(Configuracion)
@@ -41,5 +42,5 @@ from .models import RecargaTinta  # noqa: E402
 
 @admin.register(RecargaTinta)
 class RecargaTintaAdmin(admin.ModelAdmin):
-    list_display = ["canal", "fecha", "precio_botella"]
-    list_filter = ["canal"]
+    list_display = ["impresora", "canal", "fecha", "precio_botella"]
+    list_filter = ["impresora", "canal"]
