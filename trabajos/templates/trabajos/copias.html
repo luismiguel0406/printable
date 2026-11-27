@@ -27,7 +27,7 @@
     {% for e in copia_form.non_field_errors %}<p class="error">{{ e }}</p>{% endfor %}
     <div class="fila" style="margin-top:1rem">
       <button name="tipo" value="bn" class="boton-imprimir" style="flex:1" aria-label="Copias B/N">B/N · RD$ {{ precios.bn|floatformat:2 }} c/u</button>
-      <button name="tipo" value="color" class="boton-imprimir" style="flex:1;background:var(--amarillo);color:#2b2208" aria-label="Copias a color">Color · RD$ {{ precios.color|floatformat:2 }} c/u</button>
+      <button name="tipo" value="color" class="boton-imprimir boton-color" style="flex:1" aria-label="Copias a color">Color · RD$ {{ precios.color|floatformat:2 }} c/u</button>
     </div>
   </form>
 

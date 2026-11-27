@@ -2,13 +2,8 @@
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Printable{% endblock %}
 {% block dark-mode-vars %}
 <script>
-  // Tarifas también en modo oscuro la primera vez; luego manda el botón de tema del admin.
-  try {
-    if (!localStorage.getItem("printable-tema")) {
-      localStorage.setItem("theme", "dark");
-      localStorage.setItem("printable-tema", "1");
-    }
-  } catch (e) {}
+  // Tarifas sigue el modo elegido en Printable (claro u oscuro).
+  try { localStorage.setItem("theme", "{% if modo == 'claro' %}light{% else %}dark{% endif %}"); } catch (e) {}
 </script>
 {{ block.super }}
 {% endblock %}
