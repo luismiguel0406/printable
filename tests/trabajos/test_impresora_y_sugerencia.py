@@ -104,3 +104,14 @@ def test_buscar_impresoras(client, epson, controlador_falso):
     controlador_falso.impresoras.append("Canon G3110")
     client.post(reverse("impresora:buscar"))
     assert "Canon G3110" in client.get(reverse("impresora:lista")).content.decode()
+
+
+def test_aviso_si_falta_impresora_virtual(client, db):
+    assert "La impresora virtual Printable no está instalada" in client.get("/").content.decode()
+
+
+def test_sin_aviso_si_esta_printable(client, db):
+    from impresora.models import Impresora
+
+    Impresora.objects.create(nombre_windows="Printable", virtual=True, controlada=False)
+    assert "no está instalada" not in client.get("/").content.decode()

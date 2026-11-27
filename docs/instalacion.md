@@ -1,5 +1,27 @@
 # Instalación en la PC principal (Windows)
 
+## Instalación normal: PrintableSetup.exe
+
+1. Descarga `PrintableSetup-<versión>.exe` desde **GitHub → Releases** (o desde los artefactos de la
+   ejecución de *Actions* en las versiones de prueba).
+2. Ejecútalo. Si Windows SmartScreen avisa: **Más información → Ejecutar de todas formas**.
+3. El instalador hace todo:
+   - Copia el programa con su propio Python.
+   - Guarda los datos en `C:\ProgramData\Printable`.
+   - Instala y configura **clawPDF** (impresora "Printable" con guardado automático, y como predeterminada).
+   - Protege las impresoras reales.
+   - Hace que arranque solo al iniciar sesión, con un ícono junto al reloj.
+4. Al terminar se abre Printable y pide **crear tu usuario** (el dueño).
+5. Para comprobar la configuración de clawPDF, ejecuta en Símbolo del sistema:
+   `"C:\Program Files\Printable\python\python.exe" "C:\Program Files\Printable\app\instalador\configurar.py" verificar`
+
+**Actualizar** = ejecutar el instalador nuevo: los datos se conservan.
+**Publicar una versión** (desarrollador): `git tag v1.0.0 && git push --tags` y GitHub Actions publica el instalador en Releases.
+
+---
+
+# Anexo: instalación manual (desarrollo o solución de problemas)
+
 ## 1. Requisitos
 
 1. **Python 3.12 o más nuevo** desde python.org. En el instalador marca **"Add python.exe to PATH"**.

@@ -81,8 +81,14 @@ def convertir_word_a_pdf(ruta: Path, destino: Path) -> Path:
 
 
 def _abrir_pdf(ruta: Path) -> Documento:
+    # Se abre desde memoria: si el PDF está dañado, MuPDF no deja el archivo bloqueado
+    # (en Windows eso impedía moverlo a «rechazados» o borrarlo).
     try:
-        with pymupdf.open(ruta) as doc:
+        datos = ruta.read_bytes()
+    except OSError as e:
+        raise ArchivoNoValido("No se pudo leer el archivo") from e
+    try:
+        with pymupdf.open(stream=datos, filetype="pdf") as doc:
             if doc.needs_pass:
                 raise ArchivoNoValido("El PDF está protegido con contraseña")
             if doc.page_count == 0:

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}Bienvenido{% endblock %}
+{% block contenido %}
+<div class="tarjeta" style="max-width:460px">
+  <h1>Bienvenido a Printable</h1>
+  <p>Crea tu usuario. Lo usarás para cambiar las tarifas y las impresoras.</p>
+  <form method="post">{% csrf_token %}
+    {% if form.non_field_errors %}<p class="error">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+    {% for campo in form %}
+      <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}
+      {% for e in campo.errors %}<div class="error">{{ e }}</div>{% endfor %}
+    {% endfor %}
+    <p style="margin-top:1rem"><button>Crear usuario y empezar</button></p>
+  </form>
+</div>
+{% endblock %}

@@ -35,6 +35,27 @@ def cliente_empleado(db, django_user_model):
     return c
 
 
+def pytest_configure(config):
+    config.addinivalue_line("markers", "sin_usuario: no crear el superusuario automático")
+    from django.conf import settings
+
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]  # pruebas rápidas
+
+
+@pytest.fixture(autouse=True)
+def _superusuario(request):
+    """El primer uso redirige si no hay usuario: en las pruebas normales ya existe uno."""
+    if "db" not in request.fixturenames and "client" not in request.fixturenames:
+        return
+    if request.node.get_closest_marker("sin_usuario") or request.node.get_closest_marker("django_db") and request.node.get_closest_marker("django_db").kwargs.get("transaction"):
+        return
+    request.getfixturevalue("db")
+    from django.contrib.auth.models import User
+
+    if not User.objects.filter(is_superuser=True).exists():
+        User.objects.create_superuser("prueba", "", "clave-de-prueba")
+
+
 @pytest.fixture
 def controlador_falso(settings):
     settings.IMPRESORA_BACKEND = "falso"

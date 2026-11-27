@@ -2,6 +2,9 @@
 {% block titulo %}Imprimir{% endblock %}
 {% block contenido %}
 <h1>Imprimir</h1>
+{% if falta_printable %}
+<div class="aviso aviso-bloqueo">La impresora virtual Printable no está instalada: Ctrl+P desde otros programas no llegará al sistema. Vuelve a ejecutar el instalador.</div>
+{% endif %}
 {% if not hay_impresoras %}
 <div class="aviso">No hay impresoras disponibles. Revisa la pantalla <a href="/impresoras/">Impresoras</a>.</div>
 {% elif not hay_perfiles %}
