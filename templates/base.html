@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Impresión{% endblock %} · Printable</title>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="alternate icon" href="{% static 'favicon.ico' %}">
   <script src="{% static 'js/htmx.min.js' %}"></script>
   <style>
     @font-face { font-family:"Atkinson Hyperlegible"; font-weight:400; font-display:swap;
@@ -55,7 +57,10 @@
     .marca-tintas i { width:9px; height:9px; border-radius:50%; }
     .lateral nav a { display:block; padding:.55rem .75rem; border-radius:var(--radio-control); color:var(--texto-suave); text-decoration:none; font-weight:700; }
     .lateral nav a:hover { color:var(--texto); background:var(--superficie-alta); }
-    .temas { margin-top:auto; padding:.75rem; }
+    .usuario { margin-top:auto; padding:.75rem; display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; }
+    .usuario a { font-weight:700; }
+    button.enlace { background:none; border:0; padding:0; color:var(--cian); font-weight:700; }
+    .temas { padding:.25rem .75rem .75rem; }
     .temas small { display:block; margin-bottom:.4rem; }
     .temas form { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
     .temas button { width:22px; height:22px; padding:0; border-radius:50%; border:2px solid transparent; }
@@ -147,9 +152,17 @@
       <a href="/copias/"{% if r|slice:":8" == "/copias/" %} aria-current="page"{% endif %}>Copias</a>
       <a href="/historial/"{% if r == "/historial/" %} aria-current="page"{% endif %}>Historial</a>
       <a href="/tarifas/calibracion/"{% if r|slice:":21" == "/tarifas/calibracion/" %} aria-current="page"{% endif %}>Calibración</a>
-      <a href="/admin/tarifas/">Tarifas</a>
+      <a href="/tarifas/"{% if r == "/tarifas/" %} aria-current="page"{% endif %}>Tarifas</a>
       {% endwith %}
     </nav>
+    <div class="usuario">
+      {% if user.is_authenticated %}
+      <small>{{ user.get_username }}{% if user.is_superuser %} (dueño){% endif %}</small>
+      <form method="post" action="/salir/">{% csrf_token %}<button class="enlace">Salir</button></form>
+      {% else %}
+      <a href="/entrar/?next={{ request.get_full_path|urlencode }}">Entrar</a>
+      {% endif %}
+    </div>
     <div class="temas">
       <small>Color</small>
       <form method="post" action="{% url 'tema' %}">{% csrf_token %}

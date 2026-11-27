@@ -52,20 +52,19 @@ def test_pdf_rechazado_avisa(client, entrada, controlador_falso, db):
 
 
 # 3. Cambiar impresoras requiere usuario
-def test_impresoras_requiere_usuario(client, epson):
-    r = client.post(reverse("impresora:guardar", args=[epson.pk]), {"alias": "x"})
-    assert r.status_code == 302 and "/admin/login/" in r.url
+def test_impresoras_requiere_usuario(cliente_anonimo, epson, admin_user):
+    r = cliente_anonimo.post(reverse("impresora:guardar", args=[epson.pk]), {"alias": "x"})
+    assert r.status_code == 302 and r.url.startswith("/entrar/")
     epson.refresh_from_db()
     assert epson.controlada and epson.alias == ""
-    User.objects.create_superuser("luis", "", "clave")
-    client.login(username="luis", password="clave")
-    client.post(reverse("impresora:guardar", args=[epson.pk]), {"alias": "Epson fotos"})
+    cliente_anonimo.force_login(admin_user)
+    cliente_anonimo.post(reverse("impresora:guardar", args=[epson.pk]), {"alias": "Epson fotos"})
     epson.refresh_from_db()
     assert epson.alias == "Epson fotos" and not epson.controlada
 
 
-def test_lista_de_impresoras_se_ve_sin_usuario(client, epson):
-    assert client.get(reverse("impresora:lista")).status_code == 200
+def test_lista_de_impresoras_se_ve_sin_usuario(cliente_anonimo, epson):
+    assert cliente_anonimo.get(reverse("impresora:lista")).status_code == 200
 
 
 # 4. Impresora apagada / sin conexión no se ofrece

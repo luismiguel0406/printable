@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from config.permisos import solo_dueno
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -11,7 +11,7 @@ def lista(request):
     return render(request, "impresora/lista.html", {"impresoras": Impresora.objects.all()})
 
 
-@login_required
+@solo_dueno
 @require_POST
 def guardar(request, pk):
     imp = get_object_or_404(Impresora, pk=pk)
@@ -23,7 +23,7 @@ def guardar(request, pk):
     return redirect("impresora:lista")
 
 
-@login_required
+@solo_dueno
 @require_POST
 def predeterminada(request, pk):
     imp = get_object_or_404(Impresora, pk=pk, virtual=False)
