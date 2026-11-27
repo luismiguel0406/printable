@@ -26,3 +26,11 @@ pdf("protegido.pdf", 1, cifrado=True)
 Image.new("RGB", (60, 40), (200, 30, 30)).save(AQUI / "foto.jpg")
 (AQUI / "doc.docx").write_bytes(b"PK\x03\x04 no es un docx real")
 (AQUI / "x.txt").write_text("hola")
+
+# mixto.pdf: página 1 en B/N, página 2 con un recuadro rojo
+doc = pymupdf.open()
+for color in [(0, 0, 0), (0.9, 0.1, 0.1)]:
+    p = doc.new_page(width=612, height=792)
+    p.insert_text((72, 72), "Texto", fontsize=24)
+    p.draw_rect(pymupdf.Rect(72, 100, 300, 300), color=color, fill=color)
+doc.save(AQUI / "mixto.pdf")
