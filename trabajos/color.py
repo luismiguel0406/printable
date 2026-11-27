@@ -1,24 +1,30 @@
 """Clasifica cada página como B/N o color."""
 
 import pymupdf
-from PIL import Image, ImageChops, ImageOps
+from PIL import Image, ImageChops, ImageMath, ImageOps
 
 from .cobertura import _a_rgb
 from .conversion import Documento
 
 DPI_CLASIFICACION = 50
 UMBRAL_SATURACION = 40  # max(R,G,B) - min(R,G,B)
+UMBRAL_RELATIVO = 0.25  # (max - min) / max: el papel amarillento queda por debajo
 PROPORCION_MINIMA = 0.005  # 0.5 % de los píxeles
 
 
 def es_color(img: Image.Image) -> bool:
     r, g, b = _a_rgb(img).split()
-    saturacion = ImageChops.subtract(
-        ImageChops.lighter(ImageChops.lighter(r, g), b),
-        ImageChops.darker(ImageChops.darker(r, g), b),
+    maximo = ImageChops.lighter(ImageChops.lighter(r, g), b)
+    saturacion = ImageChops.subtract(maximo, ImageChops.darker(ImageChops.darker(r, g), b))
+    # Píxel con color: diferencia absoluta alta Y relativa al brillo alta.
+    absoluta = saturacion.point(lambda v: 255 if v > UMBRAL_SATURACION else 0)
+    relativa = ImageMath.lambda_eval(
+        lambda a: a["convert"](
+            (a["float"](a["s"]) > a["float"](a["mx"]) * UMBRAL_RELATIVO) * 255, "L"
+        ),
+        s=saturacion, mx=maximo,
     )
-    hist = saturacion.histogram()
-    saturados = sum(hist[UMBRAL_SATURACION + 1:])
+    saturados = ImageChops.multiply(absoluta, relativa).histogram()[255]
     return saturados > PROPORCION_MINIMA * img.width * img.height
 
 

@@ -50,6 +50,14 @@ def _nombre_trabajo(ruta: Path) -> str:
     return SUFIJO_FECHA.sub("", ruta.stem) or ruta.stem
 
 
+def _termina_bien(ruta: Path) -> bool:
+    """Un PDF completo termina con %%EOF (MuPDF abre incluso PDFs cortados)."""
+    with open(ruta, "rb") as f:
+        f.seek(0, 2)
+        f.seek(max(0, f.tell() - 1024))
+        return b"%%EOF" in f.read()
+
+
 def _mover_sin_pisar(origen: Path, carpeta: Path) -> Path:
     carpeta.mkdir(parents=True, exist_ok=True)
     destino = carpeta / origen.name
@@ -66,7 +74,7 @@ class Vigilante:
         self.carpeta = Path(carpeta)
         self.controlador = controlador
         self._vistos: dict[str, tuple[int, float]] = {}  # nombre → (tamaño, primera vez)
-        self._manejados: set[tuple[str, int]] = set()
+        self._manejados: set[tuple[str, int, str]] = set()
         self._hilos: list[threading.Thread] = []
         self._parar = threading.Event()
 
@@ -106,12 +114,15 @@ class Vigilante:
         if anterior is None or anterior[0] != tamano or tamano == 0:
             self._vistos[archivo.name] = (tamano, primera)
             return None
+        if not _termina_bien(archivo) and ahora - primera < ESPERA_RECHAZO:
+            return None  # clawPDF todavía está escribiendo
         try:
             normalizar(archivo, archivo.parent)
         except ArchivoNoValido:
             if ahora - primera >= ESPERA_RECHAZO:
                 _mover_sin_pisar(archivo, self.carpeta / "rechazados")
                 log.warning("PDF ilegible movido a rechazados: %s", archivo.name)
+                Bloqueo.objects.create(tipo="rechazado", impresora_nombre="Printable", documento=archivo.name)
                 self._vistos.pop(archivo.name, None)
             return None
         nombre = _nombre_trabajo(archivo)
@@ -134,6 +145,7 @@ class Vigilante:
     def revisar_colas(self) -> list[Bloqueo]:
         bloqueos = []
         ctrl = self._ctrl()
+        vistos_ahora: set[tuple[str, int, str]] = set()
         for imp in Impresora.objects.filter(controlada=True, activa=True, virtual=False):
             try:
                 cola = ctrl.listar_trabajos(imp.nombre_windows)
@@ -142,7 +154,8 @@ class Vigilante:
             for trabajo in cola:
                 if es_del_sistema(trabajo.documento):
                     continue
-                clave = (imp.nombre_windows, trabajo.id)
+                clave = (imp.nombre_windows, trabajo.id, trabajo.documento)
+                vistos_ahora.add(clave)
                 try:
                     ctrl.cancelar_trabajo(imp.nombre_windows, trabajo.id)
                 except ErrorImpresora as e:
@@ -154,6 +167,8 @@ class Vigilante:
                     impresora=imp, impresora_nombre=imp.nombre_windows,
                     documento=trabajo.documento[:500], usuario=trabajo.usuario[:200],
                 ))
+        # Solo se recuerdan los trabajos que siguen en cola: Windows reutiliza los números.
+        self._manejados &= vistos_ahora
         return bloqueos
 
     # --- Bucle ----------------------------------------------------------------

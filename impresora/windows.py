@@ -189,14 +189,17 @@ class ControladorWindows:
         finally:
             win32print.ClosePrinter(h)
 
-    @staticmethod
-    def _verificar_disponible(impresora: str) -> None:
+    @envolver_errores
+    def estado(self, impresora: str) -> str | None:
         h = win32print.OpenPrinter(impresora)
         try:
             info = win32print.GetPrinter(h, 2)
         finally:
             win32print.ClosePrinter(h)
-        motivo = motivo_bloqueo(info.get("Attributes", 0), info.get("Status", 0))
+        return motivo_bloqueo(info.get("Attributes", 0), info.get("Status", 0))
+
+    def _verificar_disponible(self, impresora: str) -> None:
+        motivo = self.estado(impresora)
         if motivo:
             raise ErrorImpresora(motivo)
 

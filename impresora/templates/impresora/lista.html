@@ -5,6 +5,7 @@
   <h1>Impresoras</h1>
   <form method="post" action="{% url 'impresora:buscar' %}">{% csrf_token %}<button class="secundario">Buscar impresoras</button></form>
 </div>
+{% if not user.is_authenticated %}<div class="aviso">Para cambiar algo aquí, <a href="/admin/login/?next=/impresoras/">entra con tu usuario</a>.</div>{% endif %}
 <p>Las impresoras <b>controladas</b> solo imprimen lo que sale del sistema: lo que se mande directo se cancela.</p>
 <table>
   <tr><th>Impresora</th><th>Nombre corto</th><th>Estado</th><th>Controlada</th><th></th></tr>
@@ -16,7 +17,7 @@
     <td colspan="3">
       <form method="post" action="{% url 'impresora:guardar' i.pk %}" class="fila" style="align-items:center">{% csrf_token %}
         <input name="alias" value="{{ i.alias }}" placeholder="Ej. Epson fotos" style="width:12rem">
-        <span style="width:7rem">{% if i.activa %}Conectada{% else %}<span class="error">Desconectada</span>{% endif %}</span>
+        <span style="width:7rem">{% if not i.activa %}<span class="error">Desinstalada</span>{% elif not i.en_linea %}<span class="error" title="{{ i.motivo_no_disponible }}">Sin conexión</span>{% else %}Conectada{% endif %}</span>
         {% if i.virtual %}<span style="width:5rem">—</span>{% else %}
         <label style="margin:0;font-weight:400"><input type="checkbox" name="controlada"{% if i.controlada %} checked{% endif %}> Sí</label>{% endif %}
         <button class="secundario">Guardar</button>

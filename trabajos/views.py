@@ -57,7 +57,12 @@ def imprimir(request):
         trabajo = Trabajo.objects.filter(pk=request.GET["trabajo"]).first()
     sugerencia = None
     if trabajo and trabajo.estado != "impreso":
-        impresora = trabajo.impresora if trabajo.impresora and trabajo.impresora.activa else None
+        impresora = trabajo.impresora
+        if impresora is None:
+            anterior = Trabajo.objects.filter(impresora__isnull=False).exclude(pk=trabajo.pk).order_by("-pk").first()
+            impresora = anterior.impresora if anterior else None
+        if impresora is not None and not Impresora.disponibles().filter(pk=impresora.pk).exists():
+            impresora = None
         paginas = trabajo.paginas or list(range(1, trabajo.total_paginas + 1))
         sugerencia = sugerir(trabajo.paginas_color, paginas, impresora)
         manual = trabajo.perfil is not None and trabajo.perfil.impresora_id == getattr(
@@ -131,6 +136,7 @@ def estimacion(request, pk):
         ctx["error"] = "No se pudo leer el archivo. Vuelve a subirlo."
     else:
         servicios.guardar_estimacion(trabajo, est, perfil, paginas, d["escala"])
+        ctx["tarifas_en_cero"] = servicios.tarifas_en_cero(perfil)
         ctx["est"] = est
         colores = trabajo.paginas_color
         ctx["miniaturas"] = [
@@ -170,7 +176,7 @@ def historial(request):
     return render(
         request,
         "trabajos/historial.html",
-        {"trabajos": Trabajo.objects.all()[:200], "bloqueos": Bloqueo.objects.all()[:100]},
+        {"trabajos": Trabajo.objects.all()[:200], "bloqueos": Bloqueo.objects.filter(tipo="bloqueo")[:100]},
     )
 
 

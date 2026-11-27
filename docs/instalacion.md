@@ -79,7 +79,7 @@ antes de que salga papel:
 2. Marca **"Iniciar la impresión después de que la última página se haya enviado a la cola"**.
 3. Acepta. Repite con la otra impresora.
 
-En la pantalla **Impresoras** del sistema puedes ponerles un nombre corto (por ejemplo "Epson
+En la pantalla **Impresoras** del sistema (pide tu usuario para cambiar algo) puedes ponerles un nombre corto (por ejemplo "Epson
 fotos", "HP emergencia"), elegir la predeterminada y ver cuáles están **controladas**.
 
 ## 7. Comprobar que todo funciona
@@ -110,6 +110,12 @@ Si en la prueba 2 llega a salir papel, avísame.
    Desde la segunda recarga de un color, el sistema sugiere el costo real de esa tinta.
 
 ## Si algo falla
+
+- Una impresora aparece **Sin conexión** en la pantalla Impresoras: Windows la reporta apagada,
+  sin papel o en modo "sin conexión". Mientras tanto no se ofrece para imprimir.
+- Aviso **"No se pudo leer «…»"**: el PDF que llegó por Ctrl+P estaba dañado. Quedó en
+  `C:\printable\entrada\rechazados`; vuelve a imprimirlo.
+- Aviso **"Las tarifas de esta impresora están en 0"**: llena sus costos en Tarifas.
 
 - *"No se pudo abrir la impresora"*: revisa que la Epson esté encendida y que el nombre en Windows sea el mismo del perfil.
 - Perfil con la insignia **Revisar**: se actualizó el driver; abre las preferencias de ese perfil y vuelve a guardarlas.

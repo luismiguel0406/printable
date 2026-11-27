@@ -64,6 +64,10 @@ class Bloqueo(models.Model):
     usuario = models.CharField(max_length=200, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
     visto = models.BooleanField(default=False)
+    tipo = models.CharField(
+        max_length=10, default="bloqueo",
+        choices=[("bloqueo", "Impresión directa bloqueada"), ("rechazado", "PDF de Ctrl+P ilegible")],
+    )
 
     class Meta:
         ordering = ["-fecha"]

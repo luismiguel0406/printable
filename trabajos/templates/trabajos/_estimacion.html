@@ -8,6 +8,7 @@
 {% if error %}
   <p class="error">{{ error }}</p>
 {% elif est %}
+  {% if tarifas_en_cero %}<div class="aviso">Las tarifas de esta impresora están en 0, por eso el precio sale RD$ 0. Llénalas en <a href="/admin/tarifas/">Tarifas</a>.</div>{% endif %}
   <div class="fila" style="align-items:flex-start">
     {% for det, uri, color in miniaturas %}
       <figure style="margin:0;text-align:center">

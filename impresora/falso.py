@@ -32,6 +32,7 @@ class ControladorFalso:
         self.impresos: list[tuple[str, bytes, list[Image.Image], str]] = []
         self.impresoras: list[str] = [IMPRESORA]
         self.colas: dict[str, list[TrabajoCola]] = {}
+        self.sin_conexion: set[str] = set()
         self.cancelados: list[tuple[str, int]] = []
         self._siguiente_id = 1
 
@@ -80,6 +81,10 @@ class ControladorFalso:
         self._validar(impresora)
         self.impresos.append((impresora, devmode, list(paginas), nombre_documento))
 
+
+    def estado(self, impresora: str) -> str | None:
+        self._validar(impresora)
+        return "La impresora está apagada o desconectada" if impresora in self.sin_conexion else None
 
     def encolar(self, impresora: str, documento: str, usuario: str = "cliente") -> int:
         trabajo = TrabajoCola(self._siguiente_id, documento, usuario)

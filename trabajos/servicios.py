@@ -79,6 +79,13 @@ def crear_trabajo_desde(ruta: "Path", nombre: str, origen: str):
     return trabajo
 
 
+def tarifas_en_cero(perfil: PerfilImpresion) -> bool:
+    """Sin costo de tinta ni de hoja: el precio saldría RD$ 0."""
+    t = cargar_tarifas(perfil.impresora)
+    costo, minimo = t.costo_hoja.get((perfil.tipo_papel.nombre, perfil.tamano), (0, 0))
+    return not any(t.costo_cm2.values()) and not costo and not minimo
+
+
 def documento_de(trabajo) -> Documento:
     from pathlib import Path
 

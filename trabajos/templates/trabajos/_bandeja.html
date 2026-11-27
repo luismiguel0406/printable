@@ -1,7 +1,11 @@
 {% for b in bloqueos %}
 <div class="aviso" style="border-color:#e8a0a0;background:#fff1f1">
+  {% if b.tipo == "rechazado" %}
+  No se pudo leer «{{ b.documento }}», que llegó por Ctrl+P ({{ b.fecha|time:"H:i" }}). Quedó en la carpeta <b>rechazados</b>; intenta imprimirlo otra vez.
+  {% else %}
   Se bloqueó «{{ b.documento }}» enviado directo a {{ b.impresora|default:b.impresora_nombre }}{% if b.usuario %} por {{ b.usuario }}{% endif %} ({{ b.fecha|time:"H:i" }}).
   Para imprimirlo usa Ctrl+P → <b>Printable</b>.
+  {% endif %}
   <button class="secundario" hx-post="{% url 'trabajos:bloqueo_visto' b.pk %}" hx-target="#bandeja" style="margin-left:.5rem">Entendido</button>
 </div>
 {% endfor %}

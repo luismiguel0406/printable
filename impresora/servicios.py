@@ -29,7 +29,21 @@ def sincronizar_impresoras() -> list[Impresora]:
             _al_crear(imp)
     Impresora.objects.filter(nombre_windows__in=nombres, activa=False).update(activa=True)
     Impresora.objects.exclude(nombre_windows__in=nombres).update(activa=False)
+    _actualizar_estado(obtener_controlador())
     return creadas
+
+
+def _actualizar_estado(ctrl) -> None:
+    for imp in Impresora.objects.filter(activa=True, virtual=False):
+        try:
+            motivo = ctrl.estado(imp.nombre_windows)
+        except ErrorImpresora as e:
+            motivo = str(e)
+        motivo = (motivo or "")[:120]
+        if imp.en_linea != (not motivo) or imp.motivo_no_disponible != motivo:
+            imp.en_linea = not motivo
+            imp.motivo_no_disponible = motivo
+            imp.save(update_fields=["en_linea", "motivo_no_disponible"])
 
 
 def _al_crear(imp: Impresora) -> None:

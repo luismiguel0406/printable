@@ -89,7 +89,8 @@ def test_miniaturas_marcan_color(client, bn, color, epson):
     assert html.count(">Color<") == 1 and html.count(">B/N<") == 1
 
 
-def test_pantalla_impresoras(client, epson, hp):
+def test_pantalla_impresoras(client, epson, hp, admin_user):
+    client.force_login(admin_user)
     r = client.get(reverse("impresora:lista"))
     assert "HP emergencia" in r.content.decode() and "EPSON L355 Series" in r.content.decode()
     client.post(reverse("impresora:guardar", args=[hp.pk]), {"alias": "HP de emergencia", "controlada": "on"})
