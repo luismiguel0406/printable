@@ -16,7 +16,9 @@ from . import servicios
 from .conversion import ArchivoNoValido
 from .forms import OpcionesForm, SubirForm
 from .models import Bloqueo, Trabajo
-from .rangos import parsear_rango
+from .rangos import comprimir_rango, parsear_rango
+
+MAX_PAGINAS_SELECTOR = 60  # más páginas: se usa el campo de texto
 
 
 def _data_uri(img) -> str:
@@ -56,6 +58,7 @@ def imprimir(request):
     if request.GET.get("trabajo", "").isdigit():
         trabajo = Trabajo.objects.filter(pk=request.GET["trabajo"]).first()
     sugerencia = None
+    selector, selector_largo = [], False
     if trabajo and trabajo.estado != "impreso":
         impresora = trabajo.impresora
         if impresora is None:
@@ -76,8 +79,23 @@ def imprimir(request):
                 "perfil_manual": "1" if manual else "0",
                 "copias": trabajo.copias,
                 "escala": trabajo.escala,
+                "paginas": comprimir_rango(trabajo.paginas)
+                if trabajo.paginas and len(trabajo.paginas) < trabajo.total_paginas else "",
             },
         )
+        if 1 < trabajo.total_paginas <= MAX_PAGINAS_SELECTOR:
+            elegidas = set(trabajo.paginas or range(1, trabajo.total_paginas + 1))
+            colores = trabajo.paginas_color
+            try:
+                urls = servicios.miniaturas_paginas(trabajo)
+            except Exception:
+                urls = []
+            selector = [
+                (n, url, colores[n - 1] if n <= len(colores) else None, n in elegidas)
+                for n, url in enumerate(urls, start=1)
+            ]
+        elif trabajo.total_paginas > MAX_PAGINAS_SELECTOR:
+            selector_largo = True
     return render(
         request,
         "trabajos/imprimir.html",
@@ -86,6 +104,9 @@ def imprimir(request):
             "trabajo": trabajo,
             "opciones": opciones,
             "sugerencia": sugerencia,
+            "selector": selector,
+            "selector_largo": selector_largo,
+            "hay_color_y_bn": len({c for _, _, c, _ in selector if c is not None}) == 2,
             "hay_perfiles": PerfilImpresion.objects.exists(),
             "hay_impresoras": Impresora.disponibles().exists(),
         },

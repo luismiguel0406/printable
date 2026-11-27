@@ -15,3 +15,10 @@ def test_rango_ok(t, esp):
 def test_rango_invalido(t):
     with pytest.raises(ValueError, match="[Pp]ágina"):
         parsear_rango(t, 4)
+
+
+@pytest.mark.parametrize("ns,texto", [([1, 2, 3, 5], "1-3, 5"), ([4, 2], "2, 4"), ([7], "7"), ([], "")])
+def test_comprimir_rango(ns, texto):
+    from trabajos.rangos import comprimir_rango
+
+    assert comprimir_rango(ns) == texto
