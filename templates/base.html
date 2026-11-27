@@ -130,6 +130,7 @@
       <a href="/"{% if r == "/" %} aria-current="page"{% endif %}>Imprimir</a>
       <a href="/perfiles/"{% if r|slice:":10" == "/perfiles/" %} aria-current="page"{% endif %}>Perfiles</a>
       <a href="/impresoras/"{% if r|slice:":12" == "/impresoras/" %} aria-current="page"{% endif %}>Impresoras</a>
+      <a href="/copias/"{% if r|slice:":8" == "/copias/" %} aria-current="page"{% endif %}>Copias</a>
       <a href="/historial/"{% if r == "/historial/" %} aria-current="page"{% endif %}>Historial</a>
       <a href="/tarifas/calibracion/"{% if r|slice:":21" == "/tarifas/calibracion/" %} aria-current="page"{% endif %}>Calibración</a>
       <a href="/admin/tarifas/">Tarifas</a>

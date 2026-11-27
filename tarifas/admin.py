@@ -37,7 +37,13 @@ class ConfiguracionAdmin(admin.ModelAdmin):
         return False
 
 
-from .models import RecargaTinta  # noqa: E402
+from .models import PrecioCopia, RecargaTinta  # noqa: E402
+
+
+@admin.register(PrecioCopia)
+class PrecioCopiaAdmin(admin.ModelAdmin):
+    list_display = ["impresora", "tipo", "precio"]
+    list_editable = ["precio"]
 
 
 @admin.register(RecargaTinta)

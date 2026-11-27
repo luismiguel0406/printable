@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block titulo %}Copias{% endblock %}
+{% block contenido %}
+<h1>Copias</h1>
+<p><small>Las copias hechas con el botón de la impresora no pasan por la PC: regístralas aquí al cobrarlas.</small></p>
+
+<form method="get" class="fila" style="margin-bottom:1rem">
+  <div><label for="imp">Impresora</label>
+    <select name="impresora" id="imp" onchange="this.form.submit()">
+      {% for i in impresoras %}<option value="{{ i.pk }}"{% if i == impresora %} selected{% endif %}>{{ i }}</option>{% endfor %}
+    </select></div>
+</form>
+
+{% if precios_en_cero %}<div class="aviso">El precio de las copias está en 0 para esta impresora. Ponlo en <a href="/admin/tarifas/preciocopia/">Tarifas → Precios de copia</a>.</div>{% endif %}
+
+<div class="imprimir-rejilla">
+<div>
+  <form method="post" class="tarjeta">{% csrf_token %}
+    <input type="hidden" name="impresora" value="{{ impresora.pk }}">
+    <label for="id_cantidad">Cantidad</label>
+    <div class="fila" style="align-items:center">
+      <button type="button" class="secundario" onclick="const c=document.getElementById('id_cantidad'); c.value=Math.max(1,(+c.value||1)-1)" aria-label="Una menos">−</button>
+      <input type="number" name="cantidad" id="id_cantidad" min="1" max="999" value="{{ copia_form.cantidad.value|default:1 }}" style="width:6rem;font-size:1.4rem;text-align:center">
+      <button type="button" class="secundario" onclick="const c=document.getElementById('id_cantidad'); c.value=Math.min(999,(+c.value||0)+1)" aria-label="Una más">+</button>
+    </div>
+    {% for e in copia_form.cantidad.errors %}<p class="error">{{ e }}</p>{% endfor %}
+    {% for e in copia_form.non_field_errors %}<p class="error">{{ e }}</p>{% endfor %}
+    <div class="fila" style="margin-top:1rem">
+      <button name="tipo" value="bn" class="boton-imprimir" style="flex:1" aria-label="Copias B/N">B/N · RD$ {{ precios.bn|floatformat:2 }} c/u</button>
+      <button name="tipo" value="color" class="boton-imprimir" style="flex:1;background:var(--amarillo);color:#2b2208" aria-label="Copias a color">Color · RD$ {{ precios.color|floatformat:2 }} c/u</button>
+    </div>
+  </form>
+
+  <h2>Hoy <small>RD$ {{ total_hoy|floatformat:2 }}</small></h2>
+  <table>
+    <tr><th>Hora</th><th>Impresora</th><th>Tipo</th><th class="numero">Cantidad</th><th class="numero">Total</th><th></th></tr>
+    {% for v in ventas %}
+    <tr{% if v.anulada %} style="opacity:.45"{% endif %}>
+      <td>{{ v.fecha|time:"H:i" }}</td><td>{{ v.impresora|default:"—" }}</td><td>{{ v.get_tipo_display }}</td>
+      <td class="numero">{{ v.cantidad }}</td>
+      <td class="numero">{% if v.anulada %}Anulada{% else %}RD$ {{ v.total|floatformat:2 }}{% endif %}</td>
+      <td>{% if not v.anulada %}<form method="post" action="{% url 'trabajos:anular_copia' v.pk %}" onsubmit="return confirm('¿Anular esta venta de {{ v.cantidad }} copias?')">{% csrf_token %}<button class="peligro" style="padding:.2rem .6rem">Anular</button></form>{% endif %}</td>
+    </tr>
+    {% empty %}<tr><td colspan="6">Todavía no hay copias hoy.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+<aside>
+  <div class="tarjeta">
+    <h2 style="margin-top:0">Cuadre con el contador</h2>
+    <p><small>Imprime la hoja de informe de la impresora y anota el total de páginas. El sistema compara lo que contó la impresora con lo impreso desde aquí y las copias registradas.</small></p>
+    {% if ultima_lectura %}<p><small>Última lectura: {{ ultima_lectura.total_paginas }} páginas, {{ ultima_lectura.fecha|date:"d/m/Y H:i" }}</small></p>{% endif %}
+    <form method="post" action="{% url 'trabajos:lectura' %}">{% csrf_token %}
+      <input type="hidden" name="impresora" value="{{ impresora.pk }}">
+      <label for="id_total_paginas">Total de páginas en la hoja de informe</label>
+      <div class="fila" style="align-items:center">
+        <input type="number" name="total_paginas" id="id_total_paginas" min="0" style="flex:1">
+        <button>Guardar lectura</button>
+      </div>
+      {% for e in lectura_form.non_field_errors %}<p class="error">{{ e }}</p>{% endfor %}
+      {% for e in lectura_form.total_paginas.errors %}<p class="error">{{ e }}</p>{% endfor %}
+    </form>
+  </div>
+  {% if cuadre %}
+  <p style="margin:1rem 0 .25rem"><small>«Faltan» son páginas que salieron de la impresora sin cobrarse.</small></p>
+  <table style="font-size:.9rem">
+    <tr><th>Hasta</th><th class="numero" title="Páginas que contó la impresora">Contador</th><th class="numero" title="Páginas impresas desde el sistema">Sistema</th><th class="numero">Copias</th><th class="numero">Faltan</th></tr>
+    {% for f in cuadre %}
+    <tr>
+      <td title="Desde {{ f.desde|date:'d/m/Y H:i' }}" style="white-space:nowrap">{{ f.hasta|date:"d/m H:i" }}</td>
+      <td class="numero">{{ f.contadas }}</td><td class="numero">{{ f.sistema }}</td><td class="numero">{{ f.copias }}</td>
+      <td class="numero">{% if f.sin_registrar > 0 %}<b class="error">{{ f.sin_registrar }}</b>{% else %}{{ f.sin_registrar }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p><small>La hoja de informe y las pruebas de inyectores también cuentan como páginas, así que una diferencia de 1 o 2 es normal.</small></p>
+  {% elif impresora %}
+  <p><small>Con dos lecturas aparece aquí el cuadre.</small></p>
+  {% endif %}
+</aside>
+</div>
+{% endblock %}

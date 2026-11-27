@@ -110,3 +110,22 @@ class RecargaTinta(models.Model):
 
     def __str__(self):
         return f"{self.get_canal_display()} {self.fecha:%d/%m/%Y}"
+
+
+TIPOS_COPIA = [("bn", "B/N"), ("color", "Color")]
+
+
+class PrecioCopia(models.Model):
+    """Precio de una copia hecha con el botón de la impresora."""
+
+    impresora = models.ForeignKey("impresora.Impresora", on_delete=models.CASCADE, related_name="precios_copia")
+    tipo = models.CharField(max_length=5, choices=TIPOS_COPIA)
+    precio = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0"))
+
+    class Meta:
+        verbose_name = "precio de copia"
+        verbose_name_plural = "precios de copia"
+        constraints = [models.UniqueConstraint(fields=["impresora", "tipo"], name="precio_copia_unico")]
+
+    def __str__(self):
+        return f"{self.impresora} {self.get_tipo_display()}"
