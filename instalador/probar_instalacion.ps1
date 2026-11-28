@@ -27,6 +27,16 @@ Instalar
 & $Py "$App\app\instalador\configurar.py" verificar
 if ($LASTEXITCODE -ne 0) { throw "La verificación de la instalación falló" }
 
+Paso "Vigilante como SYSTEM"
+function VigilanteSystem {
+    $p = Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" | Where-Object { $_.CommandLine -like "*vigilante_servicio.py*" }
+    foreach ($x in $p) { if ((Invoke-CimMethod -InputObject $x -MethodName GetOwner).User -eq "SYSTEM") { return $true } }
+    return $false
+}
+Esperar { VigilanteSystem } 60 "que el vigilante corra como SYSTEM"
+Esperar { & $Py "$App\app\instalador\prueba_humo.py" latido | Out-Host; $LASTEXITCODE -eq 0 } 60 "el primer latido del vigilante"
+Write-Host "El vigilante corre como SYSTEM y late"
+
 Paso "Arrancar el lanzador"
 $Lanzador = Start-Process "$App\python\python.exe" -ArgumentList "`"$App\app\lanzador.py`"" -WorkingDirectory "$App\app" -PassThru
 Esperar { Responde } 90 "que el servidor responda"

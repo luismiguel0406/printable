@@ -29,3 +29,40 @@ def test_impresoras_reales():
     assert es_impresora_real("EPSON L355 Series") and es_impresora_real("HP DeskJet 2700")
     assert not es_impresora_real("Printable") and not es_impresora_real("Microsoft Print to PDF")
     assert not es_impresora_real("clawPDF") and not es_impresora_real("Fax")
+
+
+def test_xml_tarea_corre_como_system_y_se_repite():
+    import xml.etree.ElementTree as ET
+
+    from instalador.configurar import xml_tarea
+
+    texto = xml_tarea(Path(r"C:\Program Files\Printable\python"), Path(r"C:\Program Files\Printable\app"))
+    ET.fromstring(texto.encode("utf-16"))  # debe ser XML válido (Task Scheduler lo pide en UTF-16)
+    assert "<UserId>S-1-5-18</UserId>" in texto and "<Interval>PT5M</Interval>" in texto
+    assert "<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>" in texto
+    assert "<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>" in texto and "<BootTrigger>" in texto
+    assert r"C:\Program Files\Printable\python\pythonw.exe" in texto
+    assert r"&quot;C:\Program Files\Printable\app\vigilante_servicio.py&quot;" in texto
+
+
+def test_comando_permisos_usuarios_modificar():
+    from instalador.configurar import comando_permisos
+
+    assert comando_permisos(Path(r"C:\ProgramData\Printable")) == [
+        "icacls", r"C:\ProgramData\Printable", "/grant", "*S-1-5-32-545:(OI)(CI)M", "/T", "/C", "/Q"]
+
+
+def test_comando_registro():
+    from instalador.configurar import comando_registro
+
+    assert comando_registro() == ["wevtutil", "sl", "Microsoft-Windows-PrintService/Operational", "/e:true"]
+
+
+def test_comandos_vigilante_y_quitar():
+    from instalador.configurar import TAREA, comandos_quitar, comandos_vigilante
+
+    assert TAREA == r"Printable\Vigilante"
+    crear, correr = comandos_vigilante(Path("t.xml"))
+    assert crear == ["schtasks", "/Create", "/TN", TAREA, "/XML", "t.xml", "/F"]
+    assert correr == ["schtasks", "/Run", "/TN", TAREA]
+    assert comandos_quitar() == [["schtasks", "/End", "/TN", TAREA], ["schtasks", "/Delete", "/TN", TAREA, "/F"]]

@@ -25,6 +25,14 @@ def main(orden: str) -> int:
         n = Trabajo.objects.filter(origen="capturado").count()
         print(f"capturados={n}")
         return 0 if n > 0 else 1
+    if orden == "latido":
+        from django.utils import timezone
+
+        from auditoria.models import Latido
+
+        ultimo = Latido.obtener().ultimo
+        print(f"latido={ultimo}")
+        return 0 if ultimo and timezone.now() - ultimo < timezone.timedelta(minutes=2) else 1
     print("orden desconocida", orden)
     return 2
 
