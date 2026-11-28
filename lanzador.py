@@ -47,7 +47,7 @@ def _icono():
 
 def iniciar(abrir: bool) -> None:
     try:
-        servir.preparar()
+        servir.preparar(colas=False)  # las colas las vigila la tarea SYSTEM
     except Exception as e:
         logging.getLogger("printable").exception("No se pudo arrancar")
         _mensaje_error(f"Printable no pudo arrancar:\n\n{e}\n\nRevisa el archivo de registro en la carpeta de datos.")

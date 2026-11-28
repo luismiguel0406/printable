@@ -134,3 +134,25 @@ def test_bandeja_muestra_capturados_y_bloqueos(client, vigilante, entrada, contr
 def test_ciclo_no_muere_por_errores(vigilante, monkeypatch):
     monkeypatch.setattr(vigilante, "revisar_colas", lambda: 1 / 0)
     vigilante.ciclo(0)  # no lanza
+
+
+def test_iniciar_solo_carpeta_no_crea_hilo_de_colas(tmp_path, controlador_falso):
+    from trabajos.vigilancia import Vigilante
+
+    v = Vigilante(tmp_path, controlador_falso)
+    v.iniciar(colas=False, carpeta=True)
+    try:
+        assert [h.name for h in v._hilos] == ["vigilante-carpeta"]
+    finally:
+        v.detener()
+
+
+def test_iniciar_solo_colas(tmp_path, controlador_falso):
+    from trabajos.vigilancia import Vigilante
+
+    v = Vigilante(tmp_path, controlador_falso)
+    v.iniciar(colas=True, carpeta=False)
+    try:
+        assert [h.name for h in v._hilos] == ["vigilante-colas"]
+    finally:
+        v.detener()

@@ -15,8 +15,11 @@ def servidor_activo(puerto: int = PUERTO) -> bool:
         return False
 
 
-def preparar() -> None:
-    """Django listo, base migrada, impresoras detectadas y vigilante en marcha."""
+def preparar(colas: bool = True) -> None:
+    """Django listo, base migrada, impresoras detectadas y vigilante en marcha.
+
+    colas=False: las colas las vigila el proceso SYSTEM (vigilante_servicio.py).
+    """
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
     import django
 
@@ -32,7 +35,7 @@ def preparar() -> None:
     from trabajos.vigilancia import Vigilante
 
     sincronizar_impresoras()
-    Vigilante(settings.CARPETA_ENTRADA).iniciar()
+    Vigilante(settings.CARPETA_ENTRADA).iniciar(colas=colas)
 
 
 def servir() -> None:
