@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "trabajos",
     "papeleria",
     "consolas",
+    "auditoria",
 ]
 
 MIDDLEWARE = [
@@ -86,6 +87,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.request",
                 "config.contexto.tema",
+                "config.contexto.alertas",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
@@ -182,7 +184,7 @@ if os.environ.get("PRINTABLE_DATOS"):
         "handlers": {
             "archivo": {
                 "class": "logging.handlers.RotatingFileHandler",
-                "filename": str(DATOS_DIR / "logs" / "printable.log"),
+                "filename": str(DATOS_DIR / "logs" / os.environ.get("PRINTABLE_LOG", "printable.log")),
                 "maxBytes": 1_000_000,
                 "backupCount": 5,
                 "encoding": "utf-8",

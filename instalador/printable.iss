@@ -42,6 +42,7 @@ Type: filesandordirs; Name: "{app}\app"
 [Icons]
 Name: "{autodesktop}\Printable"; Filename: "{app}\python\pythonw.exe"; Parameters: """{app}\app\lanzador.py"" --abrir"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\instalador\printable.ico"
 Name: "{autoprograms}\Printable"; Filename: "{app}\python\pythonw.exe"; Parameters: """{app}\app\lanzador.py"" --abrir"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\instalador\printable.ico"
+Name: "{commonstartup}\Printable Ctrl+P"; Filename: "{app}\python\pythonw.exe"; Parameters: """{app}\app\instalador\configurar.py"" clawpdf"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\instalador\printable.ico"
 Name: "{commonstartup}\Printable"; Filename: "{app}\python\pythonw.exe"; Parameters: """{app}\app\lanzador.py"""; WorkingDir: "{app}\app"; IconFilename: "{app}\app\instalador\printable.ico"
 
 [Run]
@@ -106,6 +107,9 @@ begin
     Paso('Creando la impresora Printable', Py, Conf + ' impresora', False);
     Paso('Configurando Ctrl+P hacia Printable', Py, Conf + ' clawpdf', True);
     Paso('Protegiendo las impresoras reales', Py, Conf + ' colas', False);
+    Paso('Permisos de datos para todos los usuarios', Py, Conf + ' permisos', False);
+    Paso('Activando el registro de impresiones', Py, Conf + ' registro', False);
+    Paso('Instalando el vigilante', Py, Conf + ' vigilante', False);
     if Fallos <> '' then
     begin
       Log('Pasos con error:' + Fallos);
@@ -114,10 +118,20 @@ begin
         mbError, MB_OK, IDOK);
     end;
   end;
+  if (CurStep = ssDone) and not WizardSilent then
+    MsgBox('Para que nadie pueda apagar el vigilante:' + #13#10#13#10 +
+      '  1. Crea una cuenta estándar de Windows para los empleados.' + #13#10 +
+      '  2. Ponle contraseña a tu cuenta de administrador.' + #13#10#13#10 +
+      'Los pasos están en docs\instalacion.md (sección «Cuenta para los empleados»).',
+      mbInformation, MB_OK);
 end;
 
 function InitializeUninstall: Boolean;
+var
+  Codigo: Integer;
 begin
+  Exec(ExpandConstant('{app}\python\python.exe'), '"' + ExpandConstant('{app}\app\instalador\configurar.py') + '" quitar',
+    ExpandConstant('{app}\app'), SW_HIDE, ewWaitUntilTerminated, Codigo);
   DetenerPrintable;
   Result := True;
 end;

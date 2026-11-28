@@ -211,14 +211,20 @@ class Vigilante:
                 ultima_sincronizacion = ahora
             self._parar.wait(INTERVALO_CARPETA)
 
-    def iniciar(self) -> None:
-        """Dos hilos: las colas nunca esperan a que termine una captura larga."""
-        (self.carpeta / "rechazados").mkdir(parents=True, exist_ok=True)
-        self._hilos = [
-            threading.Thread(target=self._repetir, args=(lambda: self.revisar_colas(), INTERVALO_COLAS),
-                             name="vigilante-colas", daemon=True),
-            threading.Thread(target=self._bucle_carpeta, name="vigilante-carpeta", daemon=True),
-        ]
+    def iniciar(self, *, colas: bool = True, carpeta: bool = True) -> None:
+        """Hilos separados: las colas nunca esperan a que termine una captura larga.
+
+        Instalado, las colas las vigila el proceso que corre como SYSTEM (vigilante_servicio.py)
+        y la carpeta de Ctrl+P, la app en la sesión del usuario.
+        """
+        self._hilos = []
+        if colas:
+            self._hilos.append(threading.Thread(
+                target=self._repetir, args=(lambda: self.revisar_colas(), INTERVALO_COLAS),
+                name="vigilante-colas", daemon=True))
+        if carpeta:
+            (self.carpeta / "rechazados").mkdir(parents=True, exist_ok=True)
+            self._hilos.append(threading.Thread(target=self._bucle_carpeta, name="vigilante-carpeta", daemon=True))
         for hilo in self._hilos:
             hilo.start()
 

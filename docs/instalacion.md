@@ -131,6 +131,17 @@ Si en la prueba 2 llega a salir papel, avísame.
 5. **Calibración** (por impresora): cada vez que rellenes un tanque, registra la recarga con el precio de la botella.
    Desde la segunda recarga de un color, el sistema sugiere el costo real de esa tinta.
 
+## Cuenta para los empleados (para que nadie apague el vigilante)
+
+El vigilante que cancela lo impreso por fuera corre como **SYSTEM** (tarea programada «Printable\Vigilante»). Una cuenta **estándar** de Windows no puede detenerlo; una cuenta de **administrador** sí. Por eso:
+
+1. **Ponle contraseña a tu cuenta** (la de administrador): Configuración → Cuentas → Opciones de inicio de sesión → Contraseña.
+2. **Crea la cuenta de los empleados**: Configuración → Cuentas → Otros usuarios → «Agregar cuenta» → «No tengo los datos de inicio de sesión de esta persona» → «Agregar un usuario sin cuenta Microsoft». Ponle un nombre, por ejemplo «Caja». Queda como **Usuario estándar**; no la cambies a administrador.
+3. Entra con «Caja» una vez. Al iniciar sesión, Printable configura solo el Ctrl+P (clawPDF) para esa cuenta y abre el ícono junto al reloj.
+4. Para instalar programas o editar las preferencias del driver de los perfiles, usa tu cuenta.
+
+**Si aun así se imprime con el vigilante apagado** (por ejemplo, desde tu cuenta), Printable lo nota la próxima vez que arranca. Se ve un banner rojo en todas las pantallas y el detalle en **Historial → Fuera del sistema**: qué se imprimió, en qué impresora, con qué usuario de Windows y cuántas páginas, y los ratos en que el vigilante estuvo apagado. Solo el dueño puede marcarlo como revisado.
+
 ## Si algo falla
 
 - Una impresora aparece **Sin conexión** en la pantalla Impresoras: Windows la reporta apagada,

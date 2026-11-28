@@ -1,5 +1,25 @@
 {% extends "base.html" %}
-{% block titulo %}Historial{% endblock %}
+{% block titulo %}Historial<h2 id="fuera" style="margin-top:2rem">Fuera del sistema</h2>
+<p>Lo que Windows imprimió sin pasar por Printable y los ratos en que el vigilante estuvo apagado. <strong>{{ paginas_fuera_hoy }} páginas hoy.</strong></p>
+{% if hay_sin_revisar and user.is_superuser %}
+<form method="post" action="{% url 'auditoria:revisar' %}">{% csrf_token %}<button>Marcar como revisado</button></form>
+{% endif %}
+<table>
+  <tr><th>Fecha</th><th>Documento</th><th>Impresora</th><th>Usuario de Windows</th><th class="numero">Páginas</th><th></th></tr>
+  {% for f in fuera %}
+  <tr><td>{{ f.fecha|date:"d/m/Y H:i" }}</td><td>{{ f.documento }}</td><td>{{ f.impresora }}</td><td>{{ f.usuario|default:"—" }}</td><td class="numero">{{ f.paginas }}</td><td>{% if not f.revisado %}<span class="error">Sin revisar</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6">Nada impreso por fuera.</td></tr>
+  {% endfor %}
+</table>
+<h3 style="margin-top:1.5rem">Vigilante apagado</h3>
+<table>
+  <tr><th>Desde</th><th>Hasta</th><th>Duración</th><th></th></tr>
+  {% for p in periodos %}
+  <tr><td>{{ p.inicio|date:"d/m/Y H:i" }}</td><td>{{ p.fin|date:"d/m/Y H:i" }}</td><td>{{ p.inicio|timesince:p.fin }}</td><td>{% if not p.revisado %}<span class="error">Sin revisar</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="4">Siempre estuvo encendido.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
 {% block contenido %}
 <h1>Historial</h1>
 {% include "_resumen_dia.html" %}

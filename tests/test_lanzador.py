@@ -43,3 +43,15 @@ def test_datos_por_defecto_en_programdata(monkeypatch):
     lanzador.preparar_entorno()
     assert os.environ["PRINTABLE_DATOS"].endswith("Printable")
     assert os.environ["DJANGO_SETTINGS_MODULE"] == "config.settings"
+
+
+def test_lanzador_no_vigila_colas(monkeypatch):
+    import lanzador
+    from config import servir
+
+    llamadas = []
+    monkeypatch.setattr(servir, "preparar", lambda **kw: llamadas.append(kw))
+    monkeypatch.setattr(servir, "servir", lambda: None)
+    monkeypatch.setattr(lanzador, "_icono", lambda: (_ for _ in ()).throw(RuntimeError("sin escritorio")))
+    lanzador.iniciar(False)
+    assert llamadas == [{"colas": False}]
