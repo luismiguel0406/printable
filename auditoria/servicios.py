@@ -12,12 +12,18 @@ PREFIJO_SISTEMA = "Printable#"
 VIRTUALES = ["printable", "microsoft print to pdf", "microsoft xps document writer", "onenote", "fax", "clawpdf"]
 
 
-def latir(ahora: datetime) -> PeriodoSinVigilancia | None:
-    """Anota que el vigilante está vivo; si llevaba más de 2 min sin latir, registra el hueco."""
+def latir(ahora: datetime, arranque: datetime | None = None) -> PeriodoSinVigilancia | None:
+    """Anota que el vigilante está vivo; si llevaba más de 2 min sin latir, registra el hueco.
+
+    arranque: cuándo encendió Windows. Con la PC apagada nadie pudo imprimir, así que el
+    hueco solo cuenta desde ese momento.
+    """
     latido = Latido.obtener()
     periodo = None
-    if latido.ultimo is not None and ahora - latido.ultimo > HUECO:
-        periodo = PeriodoSinVigilancia.objects.create(inicio=latido.ultimo, fin=ahora)
+    if latido.ultimo is not None:
+        desde = max(latido.ultimo, arranque) if arranque else latido.ultimo
+        if ahora - desde > HUECO:
+            periodo = PeriodoSinVigilancia.objects.create(inicio=desde, fin=ahora)
     latido.ultimo = ahora
     latido.save(update_fields=["ultimo"])
     return periodo

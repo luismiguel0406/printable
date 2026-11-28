@@ -77,3 +77,19 @@ def test_parsear_evento_307():
 
 def test_parsear_vacio():
     assert parsear("<Eventos></Eventos>") == []
+
+
+def test_pc_apagada_no_cuenta_como_hueco():
+    t0 = timezone.now()
+    servicios.latir(t0)
+    # La PC se apagó de noche y arrancó 8 h después; el vigilante late 40 s tras arrancar.
+    arranque = t0 + timedelta(hours=8)
+    assert servicios.latir(arranque + timedelta(seconds=40), arranque=arranque) is None
+
+
+def test_vigilante_detenido_con_pc_encendida_si_cuenta():
+    t0 = timezone.now()
+    servicios.latir(t0)
+    arranque = t0 - timedelta(days=1)  # la PC lleva encendida desde ayer
+    p = servicios.latir(t0 + timedelta(minutes=20), arranque=arranque)
+    assert p is not None and p.inicio == t0

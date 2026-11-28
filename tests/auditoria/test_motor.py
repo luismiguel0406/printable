@@ -73,3 +73,12 @@ def test_comando_wevtutil_formato():
     texto = " ".join(cmd)
     assert cmd[:3] == ["wevtutil", "qe", "Microsoft-Windows-PrintService/Operational"]
     assert "EventID=307" in texto and "2026-11-27T22:00:05.000Z" in texto and "/f:xml" in cmd
+
+
+def test_auditor_pasa_el_arranque_de_windows():
+    t0 = timezone.now()
+    Latido.objects.create(pk=1, ultimo=t0)
+    arranque = t0 + timedelta(hours=8)
+    Auditor(Lector(), Reloj(arranque + timedelta(seconds=30)), arranque=lambda: arranque).arrancar()
+    from auditoria.models import PeriodoSinVigilancia
+    assert PeriodoSinVigilancia.objects.count() == 0

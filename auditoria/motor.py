@@ -24,6 +24,18 @@ def comando_wevtutil(desde: datetime) -> list[str]:
     return ["wevtutil", "qe", REGISTRO, f"/q:{consulta}", "/f:xml"]
 
 
+def arranque_windows() -> datetime | None:
+    """Momento en que encendió la PC (GetTickCount64); None fuera de Windows."""
+    try:
+        import ctypes
+
+        ms = ctypes.windll.kernel32.GetTickCount64
+        ms.restype = ctypes.c_ulonglong
+        return timezone.now() - timedelta(milliseconds=ms())
+    except Exception:
+        return None
+
+
 def leer_windows(desde: datetime) -> str:
     r = subprocess.run(comando_wevtutil(desde), capture_output=True, text=True, timeout=60,
                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
@@ -33,8 +45,9 @@ def leer_windows(desde: datetime) -> str:
 
 
 class Auditor:
-    def __init__(self, lector: Callable[[datetime], str], reloj: Callable[[], datetime] = timezone.now):
-        self.lector, self.reloj = lector, reloj
+    def __init__(self, lector: Callable[[datetime], str], reloj: Callable[[], datetime] = timezone.now,
+                 arranque: Callable[[], datetime | None] = arranque_windows):
+        self.lector, self.reloj, self.arranque = lector, reloj, arranque
         self._ultima_lectura: datetime | None = None
 
     def _leer(self, desde: datetime, ahora: datetime) -> None:
@@ -51,7 +64,7 @@ class Auditor:
     def arrancar(self) -> None:
         ahora = self.reloj()
         hasta = Latido.obtener().eventos_hasta
-        periodo = servicios.latir(ahora)
+        periodo = servicios.latir(ahora, self.arranque())
         if periodo:
             log.warning("El vigilante estuvo apagado de %s a %s", periodo.inicio, periodo.fin)
         candidatos = [d for d in (hasta, periodo.inicio if periodo else None) if d is not None]
@@ -59,7 +72,7 @@ class Auditor:
 
     def ciclo(self) -> None:
         ahora = self.reloj()
-        servicios.latir(ahora)
+        servicios.latir(ahora, self.arranque())
         if self._ultima_lectura is None or ahora - self._ultima_lectura >= INTERVALO_EVENTOS:
             desde = Latido.obtener().eventos_hasta or ahora - timedelta(days=1)
             self._leer(desde, ahora)
