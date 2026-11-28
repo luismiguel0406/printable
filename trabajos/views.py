@@ -195,12 +195,28 @@ def confirmar(request, pk):
     return redirect(url)
 
 
+def _auditoria() -> dict:
+    from django.db.models import Sum
+    from django.utils import timezone
+
+    from auditoria.models import ImpresionFuera, PeriodoSinVigilancia
+
+    hoy = timezone.localdate()
+    return {
+        "periodos": PeriodoSinVigilancia.objects.all()[:50],
+        "fuera": ImpresionFuera.objects.all()[:100],
+        "paginas_fuera_hoy": ImpresionFuera.objects.filter(fecha__date=hoy).aggregate(s=Sum("paginas"))["s"] or 0,
+        "hay_sin_revisar": PeriodoSinVigilancia.objects.filter(revisado=False).exists()
+                           or ImpresionFuera.objects.filter(revisado=False).exists(),
+    }
+
+
 def historial(request):
     return render(
         request,
         "trabajos/historial.html",
         {"trabajos": Trabajo.objects.all()[:200], "bloqueos": Bloqueo.objects.filter(tipo="bloqueo")[:100],
-         "resumen": resumen_del_dia()},
+         "resumen": resumen_del_dia(), **_auditoria()},
     )
 
 

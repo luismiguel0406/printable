@@ -243,6 +243,7 @@
     </div>
   </aside>
   <main>
+    {% if alertas_pendientes %}<div class="aviso aviso-bloqueo" role="alert"><strong>⚠ Hubo impresiones fuera del sistema o el vigilante estuvo apagado.</strong> <a href="/historial/#fuera">Revisar</a></div>{% endif %}
     {% if messages %}{% for m in messages %}<div class="aviso">{{ m }}</div>{% endfor %}{% endif %}
     {% block contenido %}{% endblock %}
   </main>
