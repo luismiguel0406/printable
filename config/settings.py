@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "trabajos",
     "papeleria",
     "consolas",
+    "auditoria",
 ]
 
 MIDDLEWARE = [
